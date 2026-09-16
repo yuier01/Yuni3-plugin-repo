@@ -94,17 +94,17 @@ public class MCServer {
             context.getChatSession().reply("当前群组下未添加名称为【" + serverName + "】的服务器，请确认服务器名称。");
             return;
         }
-        // 检查数据库中当前群组是否绑定了新的服务器名称
-        servers = PluginUtils.query(GroupMcServer.class)
+        // 检查数据库中当前群组是否绑定了新的服务器名称（用独立变量，勿复用 servers）
+        List<GroupMcServer> existServers = PluginUtils.query(GroupMcServer.class)
                 .where("groupId", groupId)
                 .where("serverName", newServerName)
                 .list();
-        if (!servers.isEmpty()) {
+        if (!existServers.isEmpty()) {
             context.getChatSession().reply("当前群组下已添加名称为【" + newServerName + "】的服务器，请重新选择服务器名称。");
             return;
         }
 
-        // 保存新名称
+        // 保存新名称（修改的是第一次按旧名称查到的记录）
         CrudRepository<GroupMcServer> repo = PluginUtils.repo(GroupMcServer.class);
         GroupMcServer groupMcServer = servers.get(FIRST_INDEX);
         groupMcServer.setServerName(newServerName);
