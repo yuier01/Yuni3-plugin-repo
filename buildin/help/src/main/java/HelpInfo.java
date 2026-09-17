@@ -1,30 +1,58 @@
-import com.yuier.yuni.core.event.YuniMessageEvent;
-import com.yuier.yuni.event.detector.message.command.CommandDetector;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
-import com.yuier.yuni.plugin.model.passive.message.CommandPlugin;
-import com.yuier.yuni.plugin.util.PluginUtils;
+import com.yuier.yuni.plugin.api.Commands;
+import com.yuier.yuni.plugin.api.PluginMetadata;
+import com.yuier.yuni.plugin.api.YuniContext;
+import com.yuier.yuni.plugin.api.YuniPlugin;
 
 /**
- * @Title: HelpInfo
- * @Author yuier
- * @Package PACKAGE_NAME
- * @Date 2026/1/12 12:43
- * @description: 帮助信息输出
+ * 帮助信息——把插件资源目录下的帮助文本原样发回会话。
+ *
+ * <h2>迁移说明（P5）</h2>
+ * <table border="1">
+ *   <caption>旧 → 新</caption>
+ *   <tr><th>旧实现</th><th>新实现</th></tr>
+ *   <tr><td>{@code extends CommandPlugin} + {@code getDetector()}/{@code execute()} 两段式</td>
+ *       <td>{@code Commands.on(ROOT, handler)} 就地绑定</td></tr>
+ *   <tr><td>{@code PluginUtils.loadTextFromPluginFolder(file, this.getClass())}</td>
+ *       <td>{@code ctx.config().loadText(file)}——不再需要传自己的 Class</td></tr>
+ *   <tr><td>{@code eventContext.getChatSession().response(helpInfoStr)}</td>
+ *       <td>{@code reply.quote().text(helpInfoStr).send()}</td></tr>
+ * </table>
+ *
+ * <h2>为什么帮助文本仍然放在资源目录而不是元数据里</h2>
+ * <p>本插件输出的是<b>面向用户的完整使用手册</b>（多行、含格式排版），
+ * 而 {@link PluginMetadata#tips()} 是管理端展示的一句话提示。两者用途不同，
+ * 因此 {@code help-info.txt} 继续作为独立资源文件存在——运维可以直接改文本，
+ * 不需要重新打包。</p>
  */
+public class HelpInfo implements YuniPlugin {
 
-public class HelpInfo extends CommandPlugin {
+    /** 命令名。 */
+    private static final String CMD_HELP = "帮助";
 
-    private static final CommandNode ROOT = CommandNode.builder("帮助").build();
+    /** 帮助文本资源文件名。 */
+    private static final String HELP_FILE = "help-info.txt";
+
+    /** 命令树：无参数无子命令。 */
+    private static final CommandNode ROOT = CommandNode.builder(CMD_HELP)
+            .description("输出帮助信息")
+            .build();
 
     @Override
-    public CommandDetector getDetector() {
-        return new CommandDetector(ROOT);
+    public PluginMetadata metadata() {
+        return PluginMetadata.of("帮助信息")
+                .version("0.0.1")
+                .description("输出帮助信息")
+                .author("Yuier me@yuier.com")
+                .tip("向群聊发送 “/帮助” 可以查看帮助信息")
+                .defaultEnable(true)
+                .buildIn(true)
+                .build();
     }
 
     @Override
-    public void execute(YuniMessageEvent eventContext) {
-        String helpInfoFilePath = "help-info.txt";
-        String helpInfoStr = PluginUtils.loadTextFromPluginFolder(helpInfoFilePath, this.getClass());
-        eventContext.getChatSession().response(helpInfoStr);
+    public void apply(YuniContext ctx) {
+        ctx.command(Commands.on(ROOT, (event, reply) ->
+                reply.quote().text(ctx.config().loadText(HELP_FILE)).send()));
     }
 }
