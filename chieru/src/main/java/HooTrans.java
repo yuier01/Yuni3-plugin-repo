@@ -1,80 +1,110 @@
-import com.yuier.yuni.core.event.YuniMessageEvent;
-import com.yuier.yuni.core.event.matched.CommandResult;
-import com.yuier.yuni.event.detector.message.command.CommandDetector;
 import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
-import com.yuier.yuni.plugin.model.passive.message.CommandPlugin;
-import com.yuier.yuni.plugin.util.PluginUtils;
+import com.yuier.yuni.core.enums.CommandArgRequireType;
+import com.yuier.yuni.plugin.api.Commands;
+import com.yuier.yuni.plugin.api.PluginMetadata;
+import com.yuier.yuni.plugin.api.YuniContext;
+import com.yuier.yuni.plugin.api.YuniPlugin;
 import util.TransMap;
 import util.TransferUtil;
 
 import java.util.List;
 
 /**
- * @Title: HooTrans
- * @Author yuier
- * @Package PACKAGE_NAME
- * @Date 2026/1/12 17:56
- * @description: 齁哦哦转换
+ * 齁哦语编码/解码——与 {@link ChieruTrans} 同构，只是换了一张映射表。
+ *
+ * <h2>迁移说明（P5）</h2>
+ * <p>本类与 {@link ChieruTrans} 在旧实现里是两份近乎逐行相同的代码
+ * （仅命令名、参数名、映射表字段与提示文案不同）——这是「同一份逻辑复制两份」
+ * 的典型。迁移时保持两个插件独立（用户可见的命令不同、可分别启停），
+ * 但把共同点收敛：</p>
+ * <ul>
+ *   <li>编解码算法共用 {@link TransferUtil}（旧实现已经这么做了）；</li>
+ *   <li>映射表结构共用 {@link TransMap}（同一 json 文件里的 {@code hoo} 字段）；</li>
+ *   <li>结构与校验逻辑各自明写，不强行抽基类——两个类的差异点（命令名、参数名、
+ *       映射字段）全部是<b>常量</b>，抽基类只会把常量变成构造参数，
+ *       可读性反而下降。</li>
+ * </ul>
+ *
+ * <h2>与 {@link ChieruTrans} 相同的一处修正</h2>
+ * <p>映射表在 {@code apply} 时读一次并缓存，取代旧实现「每次执行都重新读 json」。</p>
  */
-public class HooTrans extends CommandPlugin {
+public class HooTrans implements YuniPlugin {
 
-    public static final String HOO_TRANS = "齁哦";
-    public static final String HOO_TRANS_ENCODED = "转换";
-    public static final String HOO_TRANS_ENCODED_ARG = "raw_words_of_hoo";
-    public static final String HOO_TRANS_DECODED = "还原";
-    public static final String HOO_TRANS_DECODED_ARG = "hoo_words";
+    /** 命令名。 */
+    private static final String CMD = "齁哦";
 
-    private static final CommandNode ROOT = CommandNode.builder(HOO_TRANS)
-            .description("齁哦语编码/解码")
-            .child(CommandNode.builder(HOO_TRANS_ENCODED)
-                    .description("齁哦语编码")
-                    .arg(ArgDef.required(HOO_TRANS_ENCODED_ARG, "齁哦语编码", com.yuier.yuni.core.enums.CommandArgRequireType.PLAIN))
-                    .build())
-            .child(CommandNode.builder(HOO_TRANS_DECODED)
-                    .description("齁哦语解码")
-                    .arg(ArgDef.required(HOO_TRANS_DECODED_ARG, "齁哦语解码", com.yuier.yuni.core.enums.CommandArgRequireType.PLAIN))
-                    .build())
-            .build();
+    /** 子命令：编码。 */
+    private static final String SUB_ENCODE = "转换";
 
-    @Override
-    public CommandDetector getDetector() {
-        return new CommandDetector(ROOT);
-    }
+    /** 子命令：解码。 */
+    private static final String SUB_DECODE = "还原";
+
+    /** 编码子命令的参数名。 */
+    private static final String ARG_ENCODE = "raw_words_of_hoo";
+
+    /** 解码子命令的参数名。 */
+    private static final String ARG_DECODE = "hoo_words";
+
+    /** 映射表文件名（位于插件资源目录，与切噜语共用同一个文件）。 */
+    private static final String TRANS_MAP_FILE = "trans-map.json";
 
     @Override
-    public void execute(YuniMessageEvent eventContext) {
-        CommandResult result = eventContext.getCommandResult();
-
-        if (result.hasChild(HOO_TRANS_ENCODED)) {
-            transferToHoo(eventContext, result.getChild(HOO_TRANS_ENCODED));
-        }
-        if (result.hasChild(HOO_TRANS_DECODED)) {
-            transferToPlain(eventContext, result.getChild(HOO_TRANS_DECODED));
-        }
+    public PluginMetadata metadata() {
+        return PluginMetadata.of("齁哦语转换")
+                .version("0.0.1")
+                .description("齁哦语转换")
+                .author("Yuier me@yuier.com")
+                .tip("向群聊发送 “/齁哦 转换 {文本}” 可以将文本转换为齁哦语")
+                .tip("向群聊发送 “/齁哦 还原 {齁哦语文本}” 可以将齁哦语还原为原始文本")
+                .defaultEnable(true)
+                .build();
     }
 
-    private void transferToHoo(YuniMessageEvent eventContext, CommandResult encodeCmd) {
-        String rawWords = encodeCmd.getArg(HOO_TRANS_ENCODED_ARG).asText();
-        TransMap transMap = PluginUtils.loadJsonConfigFromPlugin("trans-map.json", TransMap.class, this.getClass());
+    @Override
+    public void apply(YuniContext ctx) {
+        TransMap transMap = ctx.config().load(TRANS_MAP_FILE, TransMap.class);
         List<String> hooMap = transMap.getHoo();
-        String hooCode = TransferUtil.encode(rawWords, hooMap);
-        eventContext.getChatSession().response(hooMap.get(0) + hooCode);
-    }
+        if (hooMap == null || hooMap.size() < 16) {
+            throw new IllegalStateException(
+                    TRANS_MAP_FILE + " 的 hoo 映射表至少需要 16 个字符（0x0~0xF），实际 "
+                            + (hooMap == null ? 0 : hooMap.size()));
+        }
 
-    private void transferToPlain(YuniMessageEvent eventContext, CommandResult decodeCmd) {
-        String hooWords = decodeCmd.getArg(HOO_TRANS_DECODED_ARG).asText();
-        TransMap transMap = PluginUtils.loadJsonConfigFromPlugin("trans-map.json", TransMap.class, this.getClass());
-        List<String> hooMap = transMap.getHoo();
-        if (!hooWords.startsWith(hooMap.get(0))) {
-            eventContext.getChatSession().response("非法齁哦语文本，开头缺少标识符 " + hooMap.get(0));
-            return;
-        }
-        try {
-            String rawWords = TransferUtil.decode(hooWords.substring(hooMap.get(0).length()), hooMap);
-            eventContext.getChatSession().response(rawWords);
-        } catch (IllegalArgumentException e) {
-            eventContext.getChatSession().response("非法齁哦语文本，含有未定义的字符");
-        }
+        CommandNode encode = Commands.on(
+                CommandNode.builder(SUB_ENCODE)
+                        .description("齁哦语编码")
+                        .arg(ArgDef.required(ARG_ENCODE, "要编码的文本", CommandArgRequireType.PLAIN))
+                        .build(),
+                (event, reply) -> {
+                    String raw = event.getCommandResult().getArg(ARG_ENCODE).asText();
+                    reply.text(hooMap.get(0) + TransferUtil.encode(raw, hooMap)).send();
+                });
+
+        CommandNode decode = Commands.on(
+                CommandNode.builder(SUB_DECODE)
+                        .description("齁哦语解码")
+                        .arg(ArgDef.required(ARG_DECODE, "要还原的齁哦语文本", CommandArgRequireType.PLAIN))
+                        .build(),
+                (event, reply) -> {
+                    String encoded = event.getCommandResult().getArg(ARG_DECODE).asText();
+                    String marker = hooMap.get(0);
+                    if (!encoded.startsWith(marker)) {
+                        reply.text("非法齁哦语文本，开头缺少标识符 " + marker).send();
+                        return;
+                    }
+                    String body = encoded.substring(marker.length());
+                    try {
+                        reply.text(TransferUtil.decode(body, hooMap)).send();
+                    } catch (IllegalArgumentException e) {
+                        reply.text("非法齁哦语文本，含有未定义的字符").send();
+                    }
+                });
+
+        ctx.command(CommandNode.builder(CMD)
+                .description("齁哦语编码/解码")
+                .child(encode)
+                .child(decode)
+                .build());
     }
 }

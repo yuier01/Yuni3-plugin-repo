@@ -48,8 +48,23 @@ public class TransferUtil {
      * @param secretWords 密文
      * @param transMap 映射表
      * @return  解码后的明文
+     * @throws IllegalArgumentException 密文含未定义字符，或长度为奇数
      */
     public static String decode(String secretWords, List<String> transMap) {
+        /*
+         * 长度必须为偶数。
+         *
+         * 编码规则是「一个字节 → 两个映射字符」（高 4 位 + 低 4 位），因此合法密文
+         * 的长度必然是偶数。奇数长度意味着密文被截断或包含多余字符。
+         *
+         * 原实现未做此校验，而字节数组长度为 `digits.length / 2`（整数除法会
+         * 向下取整），于是奇数长度输入会**静默丢弃最后一个字符**并返回一个看似
+         * 正常的结果——比直接报错更难排查。
+         */
+        if (secretWords.length() % 2 != 0) {
+            throw new IllegalArgumentException("密文长度必须为偶数: " + secretWords.length());
+        }
+
         // 读取密文为映射表索引数组
         int[] digits = new int[secretWords.length()];
         for (int i = 0; i < secretWords.length(); i++) {
