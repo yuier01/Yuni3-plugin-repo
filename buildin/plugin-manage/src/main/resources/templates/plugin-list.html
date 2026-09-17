@@ -115,13 +115,16 @@
             border-bottom: none;
         }
 
-        /* 序号样式：纯数字极简版 */
+        /* 标识样式：插件标识文字（取代旧模板的大号序号）。
+           序号会随加载顺序与热重载变化，因此新系统改用稳定的插件标识。 */
         .plugin-index {
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 600;
             color: #FF85A2;
-            width: 40px;
+            width: 150px;
             flex-shrink: 0;
+            word-break: break-all;
+            line-height: 1.3;
         }
 
         /* 插件信息区域 */
@@ -210,9 +213,9 @@
 
         <div class="plugin-list">
             <th:block th:each="item : ${pluginList}">
-                <!-- 单插件项：渲染后端编号 ${item.singlePlugin.index} -->
+                <!-- 单插件项：渲染插件标识（取代旧模板的序号） -->
                 <div th:if="${!item.hasModule}" class="plugin-item single-plugin-item">
-                    <div class="plugin-index" th:text="${item.singlePlugin.index}">1</div>
+                    <div class="plugin-index" th:text="${item.singlePlugin.id}">module/Plugin</div>
                     <div class="plugin-info">
                         <div class="plugin-name" th:text="${item.singlePlugin.name}">示例插件</div>
                         <div class="plugin-desc" th:text="${item.singlePlugin.desc}">示例插件描述</div>
@@ -223,7 +226,7 @@
                     </label>
                 </div>
 
-                <!-- 多插件模块：渲染后端编号 ${subPlugin.index} -->
+                <!-- 多插件模块：渲染插件标识 -->
                 <div th:if="${item.hasModule}" class="multi-plugin-module">
                     <div class="module-title">
                         <div class="module-tag"></div>
@@ -231,8 +234,8 @@
                     </div>
                     <div class="module-plugins">
                         <div th:each="subPlugin : ${item.modulePlugin.subPlugins}" class="plugin-item multi-plugin-item">
-                            <!-- 直接用后端分配的编号，不再依赖stat.count -->
-                            <div class="plugin-index" th:text="${subPlugin.index}">2</div>
+                            <!-- 直接用后端给出的插件标识，不再依赖易变的序号 -->
+                            <div class="plugin-index" th:text="${subPlugin.id}">module/Plugin</div>
                             <div class="plugin-info">
                                 <div class="plugin-name" th:text="${subPlugin.name}">示例模块下插件</div>
                                 <div class="plugin-desc" th:text="${subPlugin.desc}">示例模块下插件描述</div>

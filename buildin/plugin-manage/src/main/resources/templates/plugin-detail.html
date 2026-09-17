@@ -53,14 +53,41 @@
             padding: 0 40px;
         }
 
-        .plugin-index {
-            font-size: 64px;
-            font-weight: 800;
-            color: #FF85A2;
-            font-style: italic;
+        /* 运行状态徽标：取代旧模板左侧的大号插件序号。
+           新系统用稳定的插件标识代替易变的序号，而运行状态（运行中 / 加载失败 /
+           等待依赖）正是运维真正需要一眼看到的信息。 */
+        .state-badge {
             flex-shrink: 0;
-            line-height: 1;
-            text-align: left;
+            min-width: 96px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            color: #FFFFFF;
+            background-color: #9E9E9E;
+        }
+
+        .state-badge.state-active {
+            background-color: #4CAF50;
+        }
+
+        .state-badge.state-failed {
+            background-color: #E53935;
+        }
+
+        .state-badge.state-pending {
+            background-color: #FB8C00;
+        }
+
+        .plugin-id {
+            font-size: 13px;
+            color: #999999;
+            word-break: break-all;
+            margin-top: -16px;
+            margin-bottom: 20px;
+            padding: 0 40px;
+            text-align: center;
         }
 
         .plugin-name {
@@ -215,12 +242,6 @@
                 gap: 12px;
                 padding: 0 20px;
             }
-
-            .plugin-index {
-                width: auto;
-                font-size: 56px;
-                margin-bottom: 8px;
-            }
         }
     </style>
 </head>
@@ -233,13 +254,21 @@
 
         <div class="plugin-detail">
             <div class="plugin-header">
-                <div class="plugin-index" th:text="${plugin.index}"></div>
+                <!-- 左侧徽标原来是「插件序号」，现改为运行状态：
+                     序号会随加载顺序与热重载变化（现行系统要专门做 index 偏移修正），
+                     而状态是运维真正需要一眼看到的信息 -->
+                <div class="state-badge"
+                     th:classappend="${'state-' + #strings.toLowerCase(plugin.stateKey)}"
+                     th:text="${plugin.stateName}">运行中</div>
                 <div class="plugin-name" th:text="${plugin.name}"></div>
                 <label class="switch">
                     <input type="checkbox" th:checked="${plugin.enabled}">
                     <span class="slider"></span>
                 </label>
             </div>
+
+            <!-- 插件标识：启停/重载命令按它定位插件，替代易变的序号 -->
+            <div class="plugin-id" th:text="${plugin.id}"></div>
 
             <div class="plugin-description" th:text="${plugin.description}"></div>
 
@@ -256,6 +285,20 @@
                 <div class="info-row">
                     <div class="info-label">作者:</div>
                     <div class="info-value" th:text="${plugin.author}"></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">所属模块:</div>
+                    <div class="info-value" th:text="${plugin.moduleName}"></div>
+                </div>
+                <!-- 失败原因仅在状态为「加载失败」时有值；th:if 让正常插件不出现空行 -->
+                <div class="info-row" th:if="${plugin.failureSummary != null}">
+                    <div class="info-label">失败原因:</div>
+                    <div class="info-value" th:text="${plugin.failureSummary}"></div>
+                </div>
+                <!-- 缺失依赖仅在状态为「等待依赖」时有值 -->
+                <div class="info-row" th:if="${!#lists.isEmpty(plugin.missingServices)}">
+                    <div class="info-label">缺失依赖:</div>
+                    <div class="info-value" th:text="${#strings.listJoin(plugin.missingServices, ', ')}"></div>
                 </div>
             </div>
         </div>
