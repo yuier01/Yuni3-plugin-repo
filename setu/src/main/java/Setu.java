@@ -3,7 +3,7 @@ import com.yuier.yuni.plugin.api.Commands;
 import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
-import com.yuier.yuni.plugin.api.service.Http;
+import com.yuier.yuni.plugin.api.service.YuniHttp;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,7 +30,7 @@ import java.util.Map;
  * 每种都应给用户不同提示。新设计没有把它们合并成一个统一错误——
  * 那会丢失「到底是哪一步失败」的信息，反而降低可诊断性。
  * 但异常处理简化了：{@code ctx.getHttp()} 会把网络失败与非 2xx 统一抛
- * {@link Http.HttpException}，因此不需要再区分「请求没发出去」与「响应不是 2xx」。</p>
+ * {@link YuniHttp.HttpException}，因此不需要再区分「请求没发出去」与「响应不是 2xx」。</p>
  */
 @Slf4j
 public class Setu implements YuniPlugin {
@@ -66,7 +66,7 @@ public class Setu implements YuniPlugin {
                         // size=regular：比最大的 original 小一号
                         .jsonBody(Map.of("r18", 0, "size", "regular"))
                         .execute(LoliconApiResponse.class);
-            } catch (Http.HttpException e) {
+            } catch (YuniHttp.HttpException e) {
                 log.warn("[色图] Lolicon API 调用失败: {}", e.getMessage());
                 reply.text("Lolicon Api 调用失败，请稍后再试。").send();
                 return;

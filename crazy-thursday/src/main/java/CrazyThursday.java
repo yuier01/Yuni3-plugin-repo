@@ -38,7 +38,7 @@ import java.util.Set;
  *       {@code CrazyThursday.disable} 里写的还是 {@code CrazyThursday.class}（自己），
  *       与 {@code enable} 不对称——这是没有明确依赖概念时的必然产物。</li>
  *   <li><b>隐式耦合</b>：两者通过 Redis 键交换数据，但这一契约只存在于两处
- *       {@code RedisCache.REDIS_KEY} 的引用里，没有任何类型或接口表达它。</li>
+ *       {@code RedisYuniCache.REDIS_KEY} 的引用里，没有任何类型或接口表达它。</li>
  * </ol>
  *
  * <h2>迁移后的结构</h2>
@@ -317,7 +317,7 @@ public class CrazyThursday implements YuniPlugin {
      * 两个插件共享的调度缓存对象。
      *
      * <p>旧实现里这份契约只是一句
-     * {@code PluginUtils.deserialize((String) RedisUtil.get(REDIS_KEY).orElse(null), RedisCache.class)}
+     * {@code PluginUtils.deserialize((String) RedisUtil.get(REDIS_KEY).orElse(null), RedisYuniCache.class)}
      * ——两个插件各自持有一段对同一个键的反序列化代码，契约只存在于约定里。
      * 迁移后它是一个真实类型，由本类写入、由 {@link StartAtThursday} 读取。</p>
      */

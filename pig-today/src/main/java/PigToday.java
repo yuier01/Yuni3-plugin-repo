@@ -6,7 +6,7 @@ import com.yuier.yuni.plugin.api.Commands;
 import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
-import com.yuier.yuni.plugin.api.service.Http;
+import com.yuier.yuni.plugin.api.service.YuniHttp;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -154,7 +154,7 @@ public class PigToday implements YuniPlugin {
         PigImageList response;
         try {
             response = ctx.getHttp().get(API_ALL_IMAGES).execute(PigImageList.class);
-        } catch (Http.HttpException e) {
+        } catch (YuniHttp.HttpException e) {
             // 外部接口失败不应打挂命令：记录并降级为一条提示
             log.warn("[今日猪猪] 猪图接口调用失败: {}", e.getMessage());
             return null;

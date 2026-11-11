@@ -3,11 +3,12 @@ package steamstatus.utils;
 import com.yuier.yuni.core.bot.BotGroupInfo;
 import com.yuier.yuni.plugin.api.ScopeQuery;
 import com.yuier.yuni.plugin.api.YuniContext;
-import com.yuier.yuni.plugin.api.service.Cache;
-import com.yuier.yuni.plugin.api.service.Http;
+import com.yuier.yuni.plugin.api.service.YuniCache;
+import com.yuier.yuni.plugin.api.service.YuniHttp;
 import lombok.extern.slf4j.Slf4j;
 import steamstatus.config.SteamApiKey;
 import steamstatus.db.UserSteamId;
+import steamstatus.model.AppDetailResponse;
 import steamstatus.model.AppDetailsApiResponse;
 import steamstatus.model.PlayerSummariesResponse;
 import steamstatus.model.SinglePlayerSummary;
@@ -158,11 +159,11 @@ public class SteamStatusService {
             return;
         }
         int pageCount = (int) ((total + BATCH_SIZE - 1) / BATCH_SIZE);
-        Cache cache = ctx.getCache();
+        YuniCache yuniCache = ctx.getCache();
         for (int page = 0; page < pageCount; page++) {
             for (UserSteamId binding : findBindingsByPage(page, BATCH_SIZE)) {
                 if (binding.getSteamId() != null && !binding.getSteamId().isEmpty()) {
-                    cache.hashSet(KEY_STEAM_ID_TO_USER_ID, binding.getSteamId(), binding.getUserId());
+                    yuniCache.hashSet(KEY_STEAM_ID_TO_USER_ID, binding.getSteamId(), binding.getUserId());
                 }
             }
         }
@@ -207,7 +208,7 @@ public class SteamStatusService {
      *
      * <p>取代旧 {@code getPlayerStatusBySteamId}——旧实现先取整个哈希
      * （{@code HGETALL}，n 个绑定就要传 n 条 value），再 {@code PluginUtils.deserialize}。
-     * 新实现只取需要的那个字段，并且由 {@link Cache} 负责反序列化。</p>
+     * 新实现只取需要的那个字段，并且由 {@link YuniCache} 负责反序列化。</p>
      *
      * @param steamId steam id
      * @return 状态快照；无记录时返回 {@code null}
@@ -273,7 +274,7 @@ public class SteamStatusService {
                 return List.of();
             }
             return response.getResponse().getPlayers();
-        } catch (Http.HttpException e) {
+        } catch (YuniHttp.HttpException e) {
             // 外部接口失败不应打挂定时任务：返回空列表，下一轮再试
             log.warn("[Steam] 查询玩家概况失败: {}", e.getMessage());
             return List.of();
@@ -317,7 +318,7 @@ public class SteamStatusService {
                     .execute(AppDetailsApiResponse.class);
             String name = response == null ? null : response.appName(player.getGameid());
             player.setGameChineseName(name != null ? name : player.getGameextrainfo());
-        } catch (Http.HttpException e) {
+        } catch (YuniHttp.HttpException e) {
             log.warn("[Steam] 查询游戏中文名失败，回退英文名: {}", e.getMessage());
             player.setGameChineseName(player.getGameextrainfo());
         }
