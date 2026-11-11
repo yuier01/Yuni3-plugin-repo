@@ -2,11 +2,6 @@ package utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,6 +10,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * MC 服务器状态查询（Server List Ping 协议自实现）。
@@ -114,7 +115,7 @@ public class MCPinger {
         status.setMotd(extractMotdText(description));
         // 在线玩家名列表（服务器通常最多返回 10~12 个）
         if (players != null && players.has("sample") && players.get("sample").isArray()) {
-            java.util.List<String> playerNames = new java.util.ArrayList<>();
+            List<String> playerNames = new ArrayList<>();
             for (JsonNode player : players.get("sample")) {
                 if (player.has("name")) {
                     playerNames.add(player.get("name").asText());
@@ -217,6 +218,6 @@ public class MCPinger {
         private int online;
         private int max;
         /** 在线玩家名列表（服务器最多返回约 10~12 个，其余以 ... 省略） */
-        private java.util.List<String> playerNames = java.util.Collections.emptyList();
+        private List<String> playerNames = java.util.Collections.emptyList();
     }
 }

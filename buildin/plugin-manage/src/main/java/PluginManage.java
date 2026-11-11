@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.yuier.yuni.core.event.YuniMessageEvent;
 
 /**
  * 插件管理——查看 / 开启 / 关闭 / 重载插件。
@@ -335,7 +336,7 @@ public class PluginManage implements YuniPlugin {
      * @param enabled 目标状态
      */
     private void setEnabled(YuniContext ctx, PluginManageSupport support,
-                            Reply reply, com.yuier.yuni.core.event.YuniMessageEvent event,
+                            Reply reply, YuniMessageEvent event,
                             boolean enabled) {
         String raw = event.getCommandResult().getChild(
                 enabled ? CHILD_ENABLE : CHILD_DISABLE).getArg(ARG_PLUGIN).asText().trim();

@@ -11,11 +11,6 @@ import com.yuier.yuni.core.bot.MessageTarget;
 import com.yuier.yuni.core.bot.YuniBot;
 import com.yuier.yuni.core.model.message.MessageChain;
 import com.yuier.yuni.core.model.message.MessageSegment;
-import lombok.extern.slf4j.Slf4j;
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.ClientHandshake;
-import org.java_websocket.server.WebSocketServer;
-
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,7 +19,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.java_websocket.WebSocket;
+import org.java_websocket.handshake.ClientHandshake;
+import org.java_websocket.server.WebSocketServer;
 
 /**
  * 麦麦 WebSocket 服务器，实现 OneBot v11 协议核心动作子集。
@@ -102,7 +102,7 @@ public class MaiMaiWsServer extends WebSocketServer implements MaiMaiApi {
     private volatile long heartbeatIntervalMs = 30000;
 
     /** 当前心跳任务的句柄；未启动时为 {@code null}。 */
-    private volatile java.util.concurrent.ScheduledFuture<?> heartbeatTask;
+    private volatile ScheduledFuture<?> heartbeatTask;
 
     /**
      * 构造服务器。
@@ -465,7 +465,7 @@ public class MaiMaiWsServer extends WebSocketServer implements MaiMaiApi {
      * 本实现真正 cancel 任务——客户端全部断开后不应再空转。</p>
      */
     private void stopHeartbeat() {
-        java.util.concurrent.ScheduledFuture<?> task = heartbeatTask;
+        ScheduledFuture<?> task = heartbeatTask;
         if (task != null) {
             task.cancel(false);
             heartbeatTask = null;

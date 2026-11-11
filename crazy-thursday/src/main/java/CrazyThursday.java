@@ -10,6 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import com.yuier.yuni.plugin.api.ScopeQuery;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 疯狂星期四——每周四在随机时间点向群聊发送疯四文案。
@@ -197,7 +201,7 @@ public class CrazyThursday implements YuniPlugin {
         String sentence = sentences[ThreadLocalRandom.current().nextInt(sentences.length)];
 
         // 只向启用了本插件的群发送——取代旧实现对 PluginEnableProcessor 的直接依赖
-        com.yuier.yuni.plugin.api.ScopeQuery scope = ctx.getScope();
+        ScopeQuery scope = ctx.getScope();
         for (BotGroupInfo group : ctx.getBot().getGroupList().orElse(List.of())) {
             Long groupId = group.getGroupId();
             if (!scope.isEnabledIn(groupId)) {
@@ -223,7 +227,7 @@ public class CrazyThursday implements YuniPlugin {
      * @return 升序排列的时间点
      */
     static List<Long> chooseTimePoints(long startOfTodayMillis) {
-        List<Long> points = new java.util.ArrayList<>();
+        List<Long> points = new ArrayList<>();
         points.addAll(randomPointsInWindow(
                 startOfTodayMillis, MORNING_START_HOUR, MORNING_END_HOUR, POINTS_PER_WINDOW));
         points.addAll(randomPointsInWindow(
@@ -256,11 +260,11 @@ public class CrazyThursday implements YuniPlugin {
         }
 
         // 用 Set 去重：随机取值可能重复，需保证实际数量
-        java.util.Set<Long> distinct = new java.util.HashSet<>();
+        Set<Long> distinct = new HashSet<>();
         while (distinct.size() < count) {
             distinct.add(ThreadLocalRandom.current().nextLong(begin, end));
         }
-        List<Long> result = new java.util.ArrayList<>(distinct);
+        List<Long> result = new ArrayList<>(distinct);
         result.sort(Long::compareTo);
         return result;
     }
@@ -274,7 +278,7 @@ public class CrazyThursday implements YuniPlugin {
      *         若所有时间点都已过期则返回空列表
      */
     static List<Long> calculateWaits(List<Long> points, long startTime) {
-        List<Long> waits = new java.util.ArrayList<>();
+        List<Long> waits = new ArrayList<>();
         if (points == null || points.isEmpty()) {
             return waits;
         }

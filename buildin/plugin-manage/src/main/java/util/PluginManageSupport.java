@@ -13,18 +13,18 @@ import entity.PluginDetail;
 import entity.PluginListElement;
 import entity.PluginListModule;
 import entity.PluginListSinglePlugin;
-import lombok.extern.slf4j.Slf4j;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
-import org.thymeleaf.templateresolver.StringTemplateResolver;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.templateresolver.StringTemplateResolver;
 
 import static com.microsoft.playwright.options.WaitForSelectorState.VISIBLE;
 
@@ -306,7 +306,7 @@ public class PluginManageSupport {
      * @param variables    模板变量名 → 值
      * @return 形如 {@code base64://...} 的图片引用；失败时返回 {@code null}
      */
-    public String renderToBase64(String templateFile, java.util.Map<String, Object> variables) {
+    public String renderToBase64(String templateFile, Map<String, Object> variables) {
         String template = ctx.getConfig().loadText(templateFile);
         Context context = new Context();
         variables.forEach(context::setVariable);
