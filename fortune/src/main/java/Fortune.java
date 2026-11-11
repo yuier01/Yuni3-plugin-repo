@@ -7,6 +7,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
 import entity.FortuneItem;
 import entity.FortuneTodayCache;
 import entity.PrincessFortune;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
@@ -467,44 +468,16 @@ public class Fortune implements YuniPlugin {
     /**
      * 竖排拆分结果。
      *
-     * <p>旧实现是 {@code @Data @AllArgsConstructor @NoArgsConstructor} 的内部类。
-     * 这里改为不可变对象并显式暴露访问器，去掉 Lombok 依赖。</p>
+     * <p>不可变值对象：{@code @Value} 生成全参构造器与 {@code getColNum()} /
+     * {@code getTextList()}。</p>
      */
+    @Value
     public static final class TextSplitResult {
 
         /** 列数。 */
-        private final int colNum;
+        int colNum;
 
         /** 每列的文本列表。 */
-        private final List<String> textList;
-
-        /**
-         * 构造拆分结果。
-         *
-         * @param colNum   列数
-         * @param textList 每列文本
-         */
-        public TextSplitResult(int colNum, List<String> textList) {
-            this.colNum = colNum;
-            this.textList = textList;
-        }
-
-        /**
-         * 取列数。
-         *
-         * @return 列数
-         */
-        public int getColNum() {
-            return colNum;
-        }
-
-        /**
-         * 取每列文本。
-         *
-         * @return 每列文本列表
-         */
-        public List<String> getTextList() {
-            return textList;
-        }
+        List<String> textList;
     }
 }

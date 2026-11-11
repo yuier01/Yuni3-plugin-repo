@@ -5,6 +5,7 @@ import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import com.yuier.yuni.plugin.api.service.ConfigLoader;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
@@ -98,27 +99,12 @@ public class IAmBack implements YuniPlugin {
      * <p>保持与旧实现一致的字段名（{@code target_groups}），
      * 因此 {@code i_m_back.json} 资源文件<b>无需改动</b>。</p>
      */
+    @Data
     public static class TargetGroupConfig {
 
-        /** 目标群号列表。 */
+        /** 目标群号列表（JSON 键 {@code target_groups}，由全局 SNAKE_CASE 策略映射）。 */
         private List<Long> targetGroups;
 
-        /**
-         * 取目标群列表。
-         *
-         * @return 群号列表
-         */
-        public List<Long> getTargetGroups() {
-            return targetGroups;
-        }
-
-        /**
-         * 设置目标群列表。
-         *
-         * @param targetGroups 群号列表
-         */
-        public void setTargetGroups(List<Long> targetGroups) {
-            this.targetGroups = targetGroups;
-        }
+        /* 读写器由 @Data 生成。 */
     }
 }

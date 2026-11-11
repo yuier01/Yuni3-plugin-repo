@@ -4,6 +4,7 @@ import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import com.yuier.yuni.plugin.api.service.Http;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -104,6 +105,7 @@ public class Setu implements YuniPlugin {
     /**
      * Lolicon API 的响应模型。
      */
+    @Data
     public static class LoliconApiResponse {
 
         /** 报错信息；无错误时为空字符串。 */
@@ -111,42 +113,6 @@ public class Setu implements YuniPlugin {
 
         /** 色图列表。 */
         private List<SetuItem> data;
-
-        /**
-         * 取报错信息。
-         *
-         * @return 报错信息
-         */
-        public String getError() {
-            return error;
-        }
-
-        /**
-         * 设置报错信息。
-         *
-         * @param error 报错信息
-         */
-        public void setError(String error) {
-            this.error = error;
-        }
-
-        /**
-         * 取色图列表。
-         *
-         * @return 色图列表
-         */
-        public List<SetuItem> getData() {
-            return data;
-        }
-
-        /**
-         * 设置色图列表。
-         *
-         * @param data 色图列表
-         */
-        public void setData(List<SetuItem> data) {
-            this.data = data;
-        }
     }
 
     /**
@@ -156,6 +122,7 @@ public class Setu implements YuniPlugin {
      * 旧实体还声明了 tags、width、height 等十余个字段但从未读取——
      * 那些字段随接口变化还会带来反序列化风险，因此不迁移。</p>
      */
+    @Data
     public static class SetuItem {
 
         /** pixiv 作品 id。 */
@@ -169,104 +136,15 @@ public class Setu implements YuniPlugin {
 
         /** 各尺寸图片地址。 */
         private SetuUrls urls;
-
-        /**
-         * 取作品 id。
-         *
-         * @return 作品 id
-         */
-        public long getPid() {
-            return pid;
-        }
-
-        /**
-         * 设置作品 id。
-         *
-         * @param pid 作品 id
-         */
-        public void setPid(long pid) {
-            this.pid = pid;
-        }
-
-        /**
-         * 取标题。
-         *
-         * @return 标题
-         */
-        public String getTitle() {
-            return title;
-        }
-
-        /**
-         * 设置标题。
-         *
-         * @param title 标题
-         */
-        public void setTitle(String title) {
-            this.title = title;
-        }
-
-        /**
-         * 取作者。
-         *
-         * @return 作者
-         */
-        public String getAuthor() {
-            return author;
-        }
-
-        /**
-         * 设置作者。
-         *
-         * @param author 作者
-         */
-        public void setAuthor(String author) {
-            this.author = author;
-        }
-
-        /**
-         * 取图片地址集合。
-         *
-         * @return 图片地址集合
-         */
-        public SetuUrls getUrls() {
-            return urls;
-        }
-
-        /**
-         * 设置图片地址集合。
-         *
-         * @param urls 图片地址集合
-         */
-        public void setUrls(SetuUrls urls) {
-            this.urls = urls;
-        }
     }
 
     /**
      * 图片地址集合。
      */
+    @Data
     public static class SetuUrls {
 
         /** 常规尺寸地址。 */
         private String regular;
-
-        /**
-         * 取常规尺寸地址。
-         *
-         * @return 图片地址
-         */
-        public String getRegular() {
-            return regular;
-        }
-
-        /**
-         * 设置常规尺寸地址。
-         *
-         * @param regular 图片地址
-         */
-        public void setRegular(String regular) {
-            this.regular = regular;
-        }
     }
 }

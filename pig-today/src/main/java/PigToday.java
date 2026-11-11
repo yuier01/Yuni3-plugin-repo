@@ -7,6 +7,9 @@ import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import com.yuier.yuni.plugin.api.service.Http;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
@@ -209,6 +212,7 @@ public class PigToday implements YuniPlugin {
     /**
      * 猪图接口的响应模型。
      */
+    @Data
     public static class PigImageList {
 
         /** 业务状态码。 */
@@ -219,65 +223,12 @@ public class PigToday implements YuniPlugin {
 
         /** 猪图列表。 */
         private List<PigImageElement> data;
-
-        /**
-         * 取业务状态码。
-         *
-         * @return 状态码
-         */
-        public Integer getCode() {
-            return code;
-        }
-
-        /**
-         * 设置业务状态码。
-         *
-         * @param code 状态码
-         */
-        public void setCode(Integer code) {
-            this.code = code;
-        }
-
-        /**
-         * 取提示信息。
-         *
-         * @return 提示信息
-         */
-        public String getMessage() {
-            return message;
-        }
-
-        /**
-         * 设置提示信息。
-         *
-         * @param message 提示信息
-         */
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        /**
-         * 取猪图列表。
-         *
-         * @return 猪图列表
-         */
-        public List<PigImageElement> getData() {
-            return data;
-        }
-
-        /**
-         * 设置猪图列表。
-         *
-         * @param data 猪图列表
-         */
-        public void setData(List<PigImageElement> data) {
-            this.data = data;
-        }
     }
 
     /**
      * 单张猪图的模型。
      */
+    @Data
     public static class PigImageElement {
 
         /** 标题（猪名）。 */
@@ -288,60 +239,6 @@ public class PigToday implements YuniPlugin {
 
         /** 图片相对地址。 */
         private String imageUrl;
-
-        /**
-         * 取标题。
-         *
-         * @return 标题
-         */
-        public String getTitle() {
-            return title;
-        }
-
-        /**
-         * 设置标题。
-         *
-         * @param title 标题
-         */
-        public void setTitle(String title) {
-            this.title = title;
-        }
-
-        /**
-         * 取文件名。
-         *
-         * @return 文件名
-         */
-        public String getFilename() {
-            return filename;
-        }
-
-        /**
-         * 设置文件名。
-         *
-         * @param filename 文件名
-         */
-        public void setFilename(String filename) {
-            this.filename = filename;
-        }
-
-        /**
-         * 取图片相对地址。
-         *
-         * @return 图片地址
-         */
-        public String getImageUrl() {
-            return imageUrl;
-        }
-
-        /**
-         * 设置图片相对地址。
-         *
-         * @param imageUrl 图片地址
-         */
-        public void setImageUrl(String imageUrl) {
-            this.imageUrl = imageUrl;
-        }
     }
 
     /**
@@ -349,7 +246,12 @@ public class PigToday implements YuniPlugin {
      *
      * <p>取代旧的 {@code entity.PigTodayCache}。字段与旧类保持一致，
      * 因此历史缓存仍可反序列化。</p>
+     *
+     * <p>无参构造供 Jackson 反序列化，全参构造供代码内构建。</p>
      */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class PigTodayResult {
 
         /** 猪的标题。 */
@@ -363,97 +265,5 @@ public class PigToday implements YuniPlugin {
 
         /** 图片相对地址。 */
         private String imageUrl;
-
-        /** 供 Jackson 反序列化使用。 */
-        public PigTodayResult() {
-            // 由 Jackson 填充字段
-        }
-
-        /**
-         * 构造结果。
-         *
-         * @param imageTitle 标题
-         * @param imageName  文件名
-         * @param date       日期
-         * @param imageUrl   图片地址
-         */
-        public PigTodayResult(String imageTitle, String imageName, String date, String imageUrl) {
-            this.imageTitle = imageTitle;
-            this.imageName = imageName;
-            this.date = date;
-            this.imageUrl = imageUrl;
-        }
-
-        /**
-         * 取标题。
-         *
-         * @return 标题
-         */
-        public String getImageTitle() {
-            return imageTitle;
-        }
-
-        /**
-         * 设置标题。
-         *
-         * @param imageTitle 标题
-         */
-        public void setImageTitle(String imageTitle) {
-            this.imageTitle = imageTitle;
-        }
-
-        /**
-         * 取文件名。
-         *
-         * @return 文件名
-         */
-        public String getImageName() {
-            return imageName;
-        }
-
-        /**
-         * 设置文件名。
-         *
-         * @param imageName 文件名
-         */
-        public void setImageName(String imageName) {
-            this.imageName = imageName;
-        }
-
-        /**
-         * 取日期。
-         *
-         * @return 日期字符串
-         */
-        public String getDate() {
-            return date;
-        }
-
-        /**
-         * 设置日期。
-         *
-         * @param date 日期字符串
-         */
-        public void setDate(String date) {
-            this.date = date;
-        }
-
-        /**
-         * 取图片相对地址。
-         *
-         * @return 图片地址
-         */
-        public String getImageUrl() {
-            return imageUrl;
-        }
-
-        /**
-         * 设置图片相对地址。
-         *
-         * @param imageUrl 图片地址
-         */
-        public void setImageUrl(String imageUrl) {
-            this.imageUrl = imageUrl;
-        }
     }
 }

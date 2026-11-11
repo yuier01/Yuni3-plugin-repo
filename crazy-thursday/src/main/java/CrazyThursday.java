@@ -2,6 +2,9 @@ import com.yuier.yuni.core.bot.BotGroupInfo;
 import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
@@ -314,6 +317,13 @@ public class CrazyThursday implements YuniPlugin {
      * ——两个插件各自持有一段对同一个键的反序列化代码，契约只存在于约定里。
      * 迁移后它是一个真实类型，由本类写入、由 {@link StartAtThursday} 读取。</p>
      */
+    /*
+     * 两个构造器分别服务 Jackson（无参）与代码内构建（全参），
+     * 读写器由 @Data 生成。
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class ScheduleCache {
 
         /** Redis 键。 */
@@ -324,57 +334,5 @@ public class CrazyThursday implements YuniPlugin {
 
         /** 当天的时间点。 */
         private List<Long> timePoints;
-
-        /** 供 Jackson 反序列化使用。 */
-        public ScheduleCache() {
-            // 由 Jackson 填充字段
-        }
-
-        /**
-         * 构造缓存对象。
-         *
-         * @param date       日期字符串
-         * @param timePoints 时间点列表
-         */
-        public ScheduleCache(String date, List<Long> timePoints) {
-            this.date = date;
-            this.timePoints = timePoints;
-        }
-
-        /**
-         * 取生成日期。
-         *
-         * @return 日期字符串
-         */
-        public String getDate() {
-            return date;
-        }
-
-        /**
-         * 设置生成日期。
-         *
-         * @param date 日期字符串
-         */
-        public void setDate(String date) {
-            this.date = date;
-        }
-
-        /**
-         * 取时间点列表。
-         *
-         * @return 时间点列表
-         */
-        public List<Long> getTimePoints() {
-            return timePoints;
-        }
-
-        /**
-         * 设置时间点列表。
-         *
-         * @param timePoints 时间点列表
-         */
-        public void setTimePoints(List<Long> timePoints) {
-            this.timePoints = timePoints;
-        }
     }
 }
