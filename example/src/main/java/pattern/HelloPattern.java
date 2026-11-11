@@ -27,7 +27,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
  * <p>旧实现读代码时必须在 {@code getDetector()} 与 {@code execute()} 之间来回跳，
  * 才能拼出「什么条件触发什么行为」。迁移后这一点在一行里读完：</p>
  * <pre>{@code
- * ctx.onMessage(ev -> ev.isGroup() && ev.chain().containsText("你好"),
+ * ctx.onMessage(ev -> ev.isGroup() && ev.getChain().containsText("你好"),
  *               (ev, reply) -> reply.text("你好，我是 " + botName + " !").send());
  * }</pre>
  *
@@ -42,7 +42,7 @@ public class HelloPattern implements YuniPlugin {
     private static final String TRIGGER = "你好";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("规则插件示例")
                 .version("0.0.1")
                 .description("验证模式匹配可用性")
@@ -59,7 +59,7 @@ public class HelloPattern implements YuniPlugin {
 
         ctx.onMessage(
                 // 探测条件：群聊 且 消息含触发词
-                ev -> ev.isGroup() && ev.chain().containsText(TRIGGER),
+                ev -> ev.isGroup() && ev.getChain().containsText(TRIGGER),
                 // 执行入口
                 (ev, reply) -> reply.text("你好，我是 " + botName + " !").send());
     }

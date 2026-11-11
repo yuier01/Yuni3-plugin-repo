@@ -26,7 +26,7 @@ import java.util.Set;
  *       在注册后 {@code CompletableFuture.runAsync} 执行一次</td>
  *       <td>{@code ctx.runNow(...)}——主动能力的表达就是这一行调用</td></tr>
  *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(name, C.class, getClass())}</td>
- *       <td>{@code ctx.config().load(name, C.class)}——不再需要传自己的 Class</td></tr>
+ *       <td>{@code ctx.getConfig().load(name, C.class)}——不再需要传自己的 Class</td></tr>
  * </table>
  *
  * <h2>关于「即时插件」这一类型被取消的理由</h2>
@@ -47,7 +47,7 @@ public class IAmBack implements YuniPlugin {
     private static final String MESSAGE = "我是后背";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("即时插件示例")
                 .version("0.0.1")
                 .description("即时任务插件实例")
@@ -69,7 +69,7 @@ public class IAmBack implements YuniPlugin {
      * @param ctx 插件上下文
      */
     private void broadcast(YuniContext ctx) {
-        TargetGroupConfig config = ctx.config().load("i_m_back.json", TargetGroupConfig.class);
+        TargetGroupConfig config = ctx.getConfig().load("i_m_back.json", TargetGroupConfig.class);
         List<Long> targets = config.getTargetGroups();
         if (targets == null || targets.isEmpty()) {
             log.info("未配置目标群，跳过播报");
@@ -78,7 +78,7 @@ public class IAmBack implements YuniPlugin {
 
         // 先把现有群收成集合：旧实现对每个目标群遍历一遍完整群列表，是 O(n×m)
         Set<Long> existing = new HashSet<>();
-        for (BotGroupInfo group : ctx.bot().getGroupList().orElse(List.of())) {
+        for (BotGroupInfo group : ctx.getBot().getGroupList().orElse(List.of())) {
             existing.add(group.getGroupId());
         }
 
@@ -89,7 +89,7 @@ public class IAmBack implements YuniPlugin {
                 continue;
             }
             // Sender 内部已捕获发送异常并返回失败结果，无需 try/catch
-            ctx.sender().group(groupId).text(MESSAGE).send();
+            ctx.getSender().group(groupId).text(MESSAGE).send();
         }
     }
 

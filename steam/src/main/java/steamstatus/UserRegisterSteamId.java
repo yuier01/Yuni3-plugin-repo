@@ -26,7 +26,7 @@ import java.util.List;
  *       <td>两个子节点各自 {@code .on(...)}，分派由命令分发器完成</td></tr>
  *   <tr><td>{@code DBHelper.findByUserId / insert / deleteByUserId}（静态方法，
  *       每次调用都新建 Jdbi 连接）</td>
- *       <td>{@code ctx.db().getRepository(UserSteamId.class)}</td></tr>
+ *       <td>{@code ctx.getDb().getRepository(UserSteamId.class)}</td></tr>
  *   <tr><td>{@code PluginUtils.serialize/deserialize} + {@code RedisHelper}
  *       手写缓存读写</td><td>见 {@link SteamStatusService}</td></tr>
  * </table>
@@ -65,7 +65,7 @@ public class UserRegisterSteamId implements YuniPlugin {
     private static final String ARG_STEAM_ID = "ID参数";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("绑定/解绑 steam id")
                 .version("0.0.1")
                 .description("群友绑定/解绑 steam id")

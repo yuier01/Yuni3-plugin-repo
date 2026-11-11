@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 群内戳一戳——被戳时按次数循环回复不同文案。
  *
- * <h2>迁移说明（P5）：本类是 {@code ctx.state()} 的验证样板</h2>
+ * <h2>迁移说明（P5）：本类是 {@code ctx.getState()} 的验证样板</h2>
  * <p>它替换掉设计文档 §8.5 里唯一一个「真正持有群内可变状态」的插件，
  * 因此这批迁移的重点就是验证 {@code ctx.state(Class)} 能否替代
  * 「每群一份插件实例」。</p>
@@ -67,7 +67,7 @@ public class PokeNotice implements YuniPlugin {
     };
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("戳一戳事件处理")
                 .version("0.0.1")
                 .description("戳一戳事件处理")
@@ -83,19 +83,19 @@ public class PokeNotice implements YuniPlugin {
         ctx.onNotice("poke", (ev, reply) -> {
             // 只响应「戳的是机器人自己」——target_id 由适配器从 OneBot 字段补齐，
             // 旧实现需要 unbox 判空后再比，新系统用 Optional 链式表达
-            Long target = ev.targetId().orElse(null);
-            if (target == null || target != ev.selfId()) {
+            Long target = ev.getTargetId().orElse(null);
+            if (target == null || target != ev.getSelfId()) {
                 return;
             }
 
-            Long groupId = ev.groupId().orElse(null);
+            Long groupId = ev.getGroupId().orElse(null);
             if (groupId == null) {
                 // 戳一戳出现在非群会话：当前实现只处理群内
                 return;
             }
 
-            int count = countFor(ctx, groupId, ev.userId());
-            reply.at(ev.userId()).text(POKE_MESSAGES[count]).send();
+            int count = countFor(ctx, groupId, ev.getUserId());
+            reply.at(ev.getUserId()).text(POKE_MESSAGES[count]).send();
         });
     }
 

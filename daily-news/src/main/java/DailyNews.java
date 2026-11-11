@@ -21,14 +21,14 @@ import java.util.List;
  *       {@code cronExpression()} + {@code getAction()}</td>
  *       <td>{@code ctx.schedule(cron, task)}</td></tr>
  *   <tr><td>{@code PluginUtils.simplePost(url, null, C.class)}</td>
- *       <td>{@code ctx.http().post(url).execute(C.class)}</td></tr>
+ *       <td>{@code ctx.getHttp().post(url).execute(C.class)}</td></tr>
  *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(..., this.getClass())}</td>
- *       <td>{@code ctx.config().loadOrDefault(...)}</td></tr>
+ *       <td>{@code ctx.getConfig().loadOrDefault(...)}</td></tr>
  *   <tr><td>{@code DBHelper.findBlackLists() / findWhiteLists()}
  *       ——插件自建的 {@code daily_news_group_enable} 表</td>
- *       <td>{@code ctx.scope().isEnabledIn(groupId)}——框架的群粒度启停</td></tr>
+ *       <td>{@code ctx.getScope().isEnabledIn(groupId)}——框架的群粒度启停</td></tr>
  *   <tr><td>{@code PluginUtils.sendGroupMessage(groupId, MessageChain)}</td>
- *       <td>{@code ctx.sender().group(groupId).image(url).send()}</td></tr>
+ *       <td>{@code ctx.getSender().group(groupId).image(url).send()}</td></tr>
  * </table>
  *
  * <h2>本批次中唯一一处「语义合并」（重要）</h2>
@@ -66,7 +66,7 @@ public class DailyNews implements YuniPlugin {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("每日早报")
                 .version("0.0.1")
                 .description("每天定时发送早报")
@@ -90,7 +90,7 @@ public class DailyNews implements YuniPlugin {
     private void sendTodayNews(YuniContext ctx) {
         DailyNewsResponse response;
         try {
-            response = ctx.http().post(API_ZAOBAO).execute(DailyNewsResponse.class);
+            response = ctx.getHttp().post(API_ZAOBAO).execute(DailyNewsResponse.class);
         } catch (RuntimeException e) {
             // 外部接口失败不应打挂定时任务——下一轮（明天）再试
             log.warn("[每日早报] 接口调用失败: {}", e.getMessage());
@@ -112,8 +112,8 @@ public class DailyNews implements YuniPlugin {
             return;
         }
 
-        List<BotGroupInfo> groups = ctx.bot().getGroupList().orElse(List.of());
-        ScopeQuery scope = ctx.scope();
+        List<BotGroupInfo> groups = ctx.getBot().getGroupList().orElse(List.of());
+        ScopeQuery scope = ctx.getScope();
         int sent = 0;
         for (BotGroupInfo group : groups) {
             long groupId = group.getGroupId();
@@ -121,7 +121,7 @@ public class DailyNews implements YuniPlugin {
             if (!scope.isEnabledIn(groupId)) {
                 continue;
             }
-            ctx.sender().group(groupId).image(response.getImageUrl()).send();
+            ctx.getSender().group(groupId).image(response.getImageUrl()).send();
             sent++;
         }
         log.info("[每日早报] 已向 {} 个群发送 {}", sent, today);

@@ -85,7 +85,7 @@ public class MCManage implements YuniPlugin {
     private static final String CMD_ROOT = 安慕希;
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("MC 服务管理")
                 .version("0.0.1")
                 .description("MC 服务器管理")
@@ -103,7 +103,7 @@ public class MCManage implements YuniPlugin {
     @Override
     public void apply(YuniContext ctx) {
         // 建表 + 注册实体：旧实现走 PluginUtils.registerEntity(GroupMcServer.class)
-        ctx.db().registerEntity(GroupMcServer.class);
+        ctx.getDb().registerEntity(GroupMcServer.class);
         ctx.command(buildTree(ctx));
     }
 
@@ -185,7 +185,7 @@ public class MCManage implements YuniPlugin {
                 reply.quote().text(notFound(serverName)).send();
                 return;
             }
-            ctx.db().createDeleteBuilder(GroupMcServer.class)
+            ctx.getDb().createDeleteBuilder(GroupMcServer.class)
                     .where("groupId", groupId)
                     .where("serverName", serverName)
                     .execute();
@@ -310,7 +310,7 @@ public class MCManage implements YuniPlugin {
      * @return 仓库
      */
     private static CrudRepository<GroupMcServer> repo(YuniContext ctx) {
-        return ctx.db().getRepository(GroupMcServer.class);
+        return ctx.getDb().getRepository(GroupMcServer.class);
     }
 
     /**
@@ -327,7 +327,7 @@ public class MCManage implements YuniPlugin {
      * @return 记录；不存在时返回 {@code null}
      */
     private static GroupMcServer findByName(YuniContext ctx, long groupId, String serverName) {
-        List<GroupMcServer> found = ctx.db().createQueryBuilder(GroupMcServer.class)
+        List<GroupMcServer> found = ctx.getDb().createQueryBuilder(GroupMcServer.class)
                 .where("groupId", groupId)
                 .where("serverName", serverName)
                 .list();

@@ -38,7 +38,7 @@ public class HelloCommand implements YuniPlugin {
             .build();
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("指令插件示例")
                 .version("0.0.1")
                 .description("验证指令系统可用性")

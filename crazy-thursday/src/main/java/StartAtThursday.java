@@ -42,7 +42,7 @@ import java.util.List;
 public class StartAtThursday implements YuniPlugin {
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("疯狂星期四-重启适配")
                 .version("0.0.1")
                 .description("适配在周四重启时的情况")
@@ -69,7 +69,7 @@ public class StartAtThursday implements YuniPlugin {
             return;
         }
 
-        CrazyThursday.ScheduleCache cache = ctx.cache()
+        CrazyThursday.ScheduleCache cache = ctx.getCache()
                 .get(CrazyThursday.ScheduleCache.REDIS_KEY, CrazyThursday.ScheduleCache.class)
                 .orElse(null);
         if (cache == null) {
@@ -87,7 +87,7 @@ public class StartAtThursday implements YuniPlugin {
 
         log.info("[疯四补发] 周四重启，继续完成 {} 个时间点的投放", waits.size());
         for (Long wait : waits) {
-            if (ctx.disposed()) {
+            if (ctx.isDisposed()) {
                 log.info("[疯四补发] 插件已卸载，中止补发");
                 return;
             }

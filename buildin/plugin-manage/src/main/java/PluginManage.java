@@ -114,7 +114,7 @@ public class PluginManage implements YuniPlugin {
     private static final String ARG_RELOAD_TARGET = "插件";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("插件管理")
                 .version("0.0.1")
                 .description("查看、开启、关闭与重载插件")
@@ -299,7 +299,7 @@ public class PluginManage implements YuniPlugin {
      */
     private void showDetail(YuniContext ctx, PluginManageSupport support,
                             Reply reply, String position, long groupId, PluginView plugin) {
-        String field = PluginManageSupport.detailField(position, plugin.id());
+        String field = PluginManageSupport.detailField(position, plugin.getId());
         int currentHash = support.hashCodeOfDetail(plugin, groupId);
         Integer cachedHash = support.loadHashCode(
                 PluginManageSupport.PLUGIN_DETAIL_HASHCODE_CACHE_KEY, field);
@@ -349,15 +349,15 @@ public class PluginManage implements YuniPlugin {
         long groupId = event.getGroupId();
         String action = enabled ? "开启" : "关闭";
 
-        if (ctx.plugins().isEnabledIn(plugin.id(), groupId) == enabled) {
+        if (ctx.getPlugins().isEnabledIn(plugin.getId(), groupId) == enabled) {
             // 已经是目标状态：明确告知而不是再操作一遍，避免用户以为命令没生效
-            reply.quote().text("插件「" + plugin.name() + "」在当前群已经是" + action + "状态。").send();
+            reply.quote().text("插件「" + plugin.getName() + "」在当前群已经是" + action + "状态。").send();
             return;
         }
 
         boolean callerIsMaster = isBotMaster(ctx, event.getUserId(), groupId);
         try {
-            ctx.plugins().setEnabled(plugin.id(), groupId, enabled, callerIsMaster);
+            ctx.getPlugins().setEnabled(plugin.getId(), groupId, enabled, callerIsMaster);
         } catch (PluginAdminException e) {
             // 可预期的业务拒绝（内置插件、插件不存在）——把原因原样回给用户，
             // 而不是让它冒到框架的统一兜底（那样用户只会看到「插件执行出错」）
@@ -367,7 +367,7 @@ public class PluginManage implements YuniPlugin {
 
         // 让缓存失效：插件列表/详情里的开关状态变了，下一次查看必须重新渲染。
         // 这里不清缓存而是让它自然失效——哈希里含 enabled，因此下次比较必然不等
-        reply.quote().text("已在当前群" + action + "插件「" + plugin.name() + "」。").send();
+        reply.quote().text("已在当前群" + action + "插件「" + plugin.getName() + "」。").send();
     }
 
     /**
@@ -378,19 +378,19 @@ public class PluginManage implements YuniPlugin {
      * @param plugin 目标插件
      */
     private void reloadOne(YuniContext ctx, Reply reply, PluginView plugin) {
-        String moduleId = plugin.moduleId();
+        String moduleId = plugin.getModuleId();
         if (moduleId == null || moduleId.isBlank()) {
-            reply.quote().text("插件「" + plugin.name() + "」不属于任何模块，无法重载。\n"
+            reply.quote().text("插件「" + plugin.getName() + "」不属于任何模块，无法重载。\n"
                     + "（它可能是通过代码直接加载的）").send();
             return;
         }
         try {
-            ctx.plugins().reload(moduleId);
+            ctx.getPlugins().reload(moduleId);
         } catch (PluginAdminException e) {
             reply.quote().text("重载失败：" + e.getMessage()).send();
             return;
         }
-        reply.quote().text("已重载模块「" + moduleId + "」（插件「" + plugin.name() + "」所在模块）。").send();
+        reply.quote().text("已重载模块「" + moduleId + "」（插件「" + plugin.getName() + "」所在模块）。").send();
     }
 
     /**
@@ -409,8 +409,8 @@ public class PluginManage implements YuniPlugin {
      * @param reply 回复入口
      */
     private void reloadAll(YuniContext ctx, Reply reply) {
-        PluginAdmin admin = ctx.plugins();
-        List<PluginModuleView> modules = admin.modules();
+        PluginAdmin admin = ctx.getPlugins();
+        List<PluginModuleView> modules = admin.getModules();
         if (modules.isEmpty()) {
             reply.quote().text("当前没有任何已加载的插件模块。").send();
             return;
@@ -423,10 +423,10 @@ public class PluginManage implements YuniPlugin {
         int reloaded = 0;
         // 先把其他模块重载完，最后处理自己所在模块
         for (PluginModuleView module : modules) {
-            if (module.id().equals(selfModule)) {
+            if (module.getId().equals(selfModule)) {
                 continue;
             }
-            if (tryReload(admin, module.id(), failed)) {
+            if (tryReload(admin, module.getId(), failed)) {
                 reloaded++;
             }
         }
@@ -473,7 +473,7 @@ public class PluginManage implements YuniPlugin {
      * <p>接受两种形式，按顺序尝试：</p>
      * <ol>
      *   <li><b>完整标识</b>（{@code steam/MemberSteamStatus}）——精确匹配；</li>
-     *   <li><b>列表序号</b>（{@code 3}）——按 {@code admin.plugins()} 的顺序取第 N 个。</li>
+     *   <li><b>列表序号</b>（{@code 3}）——按 {@code admin.getPlugins()} 的顺序取第 N 个。</li>
      * </ol>
      * <p>序号是便利而非权威：它随加载顺序变化，所以只作为「不想打长标识」时的
      * 快捷方式，列表展示的仍然是标识本身。</p>
@@ -483,7 +483,7 @@ public class PluginManage implements YuniPlugin {
      * @return 插件视图；解析失败时为空
      */
     private Optional<PluginView> resolve(YuniContext ctx, String raw) {
-        PluginAdmin admin = ctx.plugins();
+        PluginAdmin admin = ctx.getPlugins();
         Optional<PluginView> exact = admin.plugin(raw);
         if (exact.isPresent()) {
             return exact;
@@ -495,7 +495,7 @@ public class PluginManage implements YuniPlugin {
         } catch (NumberFormatException e) {
             return Optional.empty();
         }
-        List<PluginView> all = admin.plugins();
+        List<PluginView> all = admin.getPlugins();
         if (index < 1 || index > all.size()) {
             return Optional.empty();
         }
@@ -516,7 +516,7 @@ public class PluginManage implements YuniPlugin {
      * @return 拥有者返回 {@code true}
      */
     private boolean isBotMaster(YuniContext ctx, long userId, Long groupId) {
-        return ctx.permission().resolve(userId, groupId, null).getPriority()
+        return ctx.getPermission().resolve(userId, groupId, null).getPriority()
                 >= UserPermission.MASTER.getPriority();
     }
 
@@ -527,10 +527,10 @@ public class PluginManage implements YuniPlugin {
      * @return 模块 ID；找不到时返回 {@code null}
      */
     private String selfModuleId(PluginAdmin admin) {
-        for (PluginModuleView module : admin.modules()) {
-            for (PluginView plugin : module.plugins()) {
-                if (metadata().name().equals(plugin.name())) {
-                    return module.id();
+        for (PluginModuleView module : admin.getModules()) {
+            for (PluginView plugin : module.getPlugins()) {
+                if (getMetadata().getName().equals(plugin.getName())) {
+                    return module.getId();
                 }
             }
         }

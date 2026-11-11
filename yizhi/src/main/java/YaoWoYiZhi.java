@@ -36,7 +36,7 @@ import java.util.Set;
  *   <tr><td>{@code eventContext.getChatSession().response(new MessageChain(...))}</td>
  *       <td>{@code reply.text(...)} / {@code reply.image("base64://...")}</td></tr>
  *   <tr><td>{@code PluginUtils.loadFontFromPlugin(..., YaoWoYiZhi.class)} 在逐帧处理里调用</td>
- *       <td>{@code ctx.config().open(...)}，且字体只在每次命令处理开始时加载<b>一次</b></td></tr>
+ *       <td>{@code ctx.getConfig().open(...)}，且字体只在每次命令处理开始时加载<b>一次</b></td></tr>
  * </table>
  *
  * <h2>顺带修掉的缺陷</h2>
@@ -83,7 +83,7 @@ public class YaoWoYiZhi implements YuniPlugin {
             .build();
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("要我一直 IMAGE 吗")
                 .version("0.0.1")
                 .description("一直.image")
@@ -175,7 +175,7 @@ public class YaoWoYiZhi implements YuniPlugin {
      * @return 字体；加载失败时返回 {@code null}，调用方回退到默认字体
      */
     private Font loadFont(YuniContext ctx) {
-        try (InputStream in = ctx.config().open(FONT_PATH)) {
+        try (InputStream in = ctx.getConfig().open(FONT_PATH)) {
             return Font.createFont(Font.TRUETYPE_FONT, in).deriveFont(100f);
         } catch (IOException | FontFormatException e) {
             log.error("[要我一直] 加载字体失败，将使用默认字体", e);

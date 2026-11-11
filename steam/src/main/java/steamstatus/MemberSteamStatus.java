@@ -25,7 +25,7 @@ import java.util.Set;
  * if (processor.isPluginEnabled(groupId, this.getClass())) { ... }
  * }</pre>
  * <p>三个问题：依赖框架内部类、需要把自己的 {@code Class} 当身份传进去、
- * 且必须从 Spring 容器取 Bean。新实现改为 {@code ctx.scope().isEnabledIn(groupId)}
+ * 且必须从 Spring 容器取 Bean。新实现改为 {@code ctx.getScope().isEnabledIn(groupId)}
  * ——稳定契约，无需暴露身份（见 {@link SteamStatusService#enabledGroupsOfUser}）。</p>
  *
  * <table border="1">
@@ -34,12 +34,12 @@ import java.util.Set;
  *   <tr><td>{@code extends ScheduledPlugin} + {@code cronExpression()} + {@code getAction()}</td>
  *       <td>{@code ctx.schedule(cron, task)}——任务随插件卸载自动取消</td></tr>
  *   <tr><td>{@code PluginUtils.simpleGet(url, ...)}（手工拼 baseUrl 三段字符串）</td>
- *       <td>{@code ctx.http().get(...).query(...)}，见
+ *       <td>{@code ctx.getHttp().get(...).query(...)}，见
  *           {@link SteamStatusService#queryPlayers(List)}</td></tr>
  *   <tr><td>{@code PluginUtils.findUserGroups(userId)} 取用户所在全部群</td>
  *       <td>仍取群列表，但只保留「用户确实在群里且启用了本插件」的群</td></tr>
  *   <tr><td>{@code EventLogUtil.getGroupMemberName(gid, uid)}</td>
- *       <td>{@code ctx.bot().getGroupMemberInfo(...)}，见
+ *       <td>{@code ctx.getBot().getGroupMemberInfo(...)}，见
  *           {@link SteamStatusService#memberDisplayName(long, long)}</td></tr>
  * </table>
  *
@@ -73,7 +73,7 @@ public class MemberSteamStatus implements YuniPlugin {
     private static final String CRON_EVERY_MINUTE = CronExpressionBuilder.create().everyMinutes(1).build();
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("群友 steam 游戏状态监控")
                 .version("0.0.1")
                 .description("监控群友的 steam 游戏状态")

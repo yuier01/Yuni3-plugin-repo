@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  * <pre>{@code
  * ctx.onMeta("heartbeat", (ev, reply) ->
  *         log.debug("心跳: online={}, interval={}ms",
- *                   ev.statusOnline(), ev.heartbeatInterval().orElse(0L)));
+ *                   ev.isStatusOnline(), ev.getHeartbeatInterval().orElse(0L)));
  * }</pre>
  *
  * <h2>为什么把日志级别放在 debug</h2>
@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 public class HeartBeatEvent implements YuniPlugin {
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("OneBot 心跳事件处理")
                 .version("0.0.1")
                 .description("OneBot 心跳事件处理")
@@ -58,9 +58,9 @@ public class HeartBeatEvent implements YuniPlugin {
         // 只需声明元事件类型；「是不是心跳」的判定在注册时完成
         ctx.onMeta("heartbeat", (ev, reply) ->
                 log.debug("[心跳] online={}, good={}, interval={}ms",
-                        ev.statusOnline(),
-                        ev.statusGood(),
+                        ev.isStatusOnline(),
+                        ev.isStatusGood(),
                         // 字段由适配器保留——旧实现在此只能拿到 null
-                        ev.heartbeatInterval().orElse(-1L)));
+                        ev.getHeartbeatInterval().orElse(-1L)));
     }
 }

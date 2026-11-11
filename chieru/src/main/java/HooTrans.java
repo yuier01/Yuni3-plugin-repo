@@ -50,7 +50,7 @@ public class HooTrans implements YuniPlugin {
     private static final String TRANS_MAP_FILE = "trans-map.json";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("齁哦语转换")
                 .version("0.0.1")
                 .description("齁哦语转换")
@@ -63,7 +63,7 @@ public class HooTrans implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        TransMap transMap = ctx.config().load(TRANS_MAP_FILE, TransMap.class);
+        TransMap transMap = ctx.getConfig().load(TRANS_MAP_FILE, TransMap.class);
         List<String> hooMap = transMap.getHoo();
         if (hooMap == null || hooMap.size() < 16) {
             throw new IllegalStateException(

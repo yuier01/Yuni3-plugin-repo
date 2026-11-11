@@ -13,7 +13,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
  *   <tr><td>{@code extends PatternPlugin}</td><td>{@code implements YuniPlugin}</td></tr>
  *   <tr><td>{@code getDetector()} 返回 {@code PatternDetector}</td>
  *       <td>{@code ctx.onMessage(条件, 处理器)}——探测条件与执行入口同一个表达式</td></tr>
- *   <tr><td>{@code execute(YuniMessageEvent)} 用 {@code getChatSession().reply()}</td>
+ *   <tr><td>{@code execute(YuniMessageEvent)} 用 {@code getChatSession().getReply()}</td>
  *       <td>处理器第二参数 {@code reply} 直接可用</td></tr>
  *   <tr><td>{@code metadata.json} 描述插件</td><td>{@code metadata()} 方法描述，代码是唯一真相</td></tr>
  * </table>
@@ -35,7 +35,7 @@ public class AntiGbf implements YuniPlugin {
     private static final String WARNING = "大家不要信，这是骑空士的陷阱！";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("骑空士陷阱粉碎机")
                 .version("0.0.1")
                 .description("警惕骑空士的陷阱")
@@ -49,7 +49,7 @@ public class AntiGbf implements YuniPlugin {
     public void apply(YuniContext ctx) {
         ctx.onMessage(
                 // 探测条件：群聊 且 消息文本含有陷阱特征
-                ev -> ev.isGroup() && ev.chain().containsText(TRAP_MARKER),
+                ev -> ev.isGroup() && ev.getChain().containsText(TRAP_MARKER),
                 // 执行入口：引用触发消息并回复警告
                 (ev, reply) -> reply.quote().text(WARNING).send());
     }

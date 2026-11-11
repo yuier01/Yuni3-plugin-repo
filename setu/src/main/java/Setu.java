@@ -20,7 +20,7 @@ import java.util.Map;
  *   <tr><td>{@code extends CommandPlugin} + 两段式</td>
  *       <td>{@code Commands.on(ROOT, handler)}</td></tr>
  *   <tr><td>{@code PluginUtils.simplePost(url, params, C.class)}</td>
- *       <td>{@code ctx.http().post(url).jsonBody(params).execute(C.class)}</td></tr>
+ *       <td>{@code ctx.getHttp().post(url).jsonBody(params).execute(C.class)}</td></tr>
  *   <tr><td>失败时 {@code getChatSession().response(...)} 逐个分支返回</td>
  *       <td>仍是逐个分支返回，但改用 {@code reply}</td></tr>
  * </table>
@@ -29,7 +29,7 @@ import java.util.Map;
  * <p>外部接口的响应有多种失败形态（业务错误、空列表、图片地址缺失），
  * 每种都应给用户不同提示。新设计没有把它们合并成一个统一错误——
  * 那会丢失「到底是哪一步失败」的信息，反而降低可诊断性。
- * 但异常处理简化了：{@code ctx.http()} 会把网络失败与非 2xx 统一抛
+ * 但异常处理简化了：{@code ctx.getHttp()} 会把网络失败与非 2xx 统一抛
  * {@link Http.HttpException}，因此不需要再区分「请求没发出去」与「响应不是 2xx」。</p>
  */
 @Slf4j
@@ -44,7 +44,7 @@ public class Setu implements YuniPlugin {
             .build();
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("涩涩")
                 .version("0.0.1")
                 .description("群友喜闻乐见的模块")
@@ -60,7 +60,7 @@ public class Setu implements YuniPlugin {
         ctx.command(Commands.on(ROOT, (event, reply) -> {
             LoliconApiResponse response;
             try {
-                response = ctx.http()
+                response = ctx.getHttp()
                         .post(LOLICON_API_V2)
                         // r18=0：QQ 群还是要稳一手
                         // size=regular：比最大的 original 小一号

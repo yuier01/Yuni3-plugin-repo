@@ -89,7 +89,7 @@ public class SteamStatusService {
      * 分开维护，加字段时容易漏改。新系统由 {@code TableSchema} 从实体类推导 DDL。</p>
      */
     public void initDatabase() {
-        ctx.db().registerEntity(UserSteamId.class);
+        ctx.getDb().registerEntity(UserSteamId.class);
     }
 
     /**
@@ -98,7 +98,7 @@ public class SteamStatusService {
      * @return 记录数
      */
     public long countBindings() {
-        return ctx.db().getRepository(UserSteamId.class).count();
+        return ctx.getDb().getRepository(UserSteamId.class).count();
     }
 
     /**
@@ -109,7 +109,7 @@ public class SteamStatusService {
      * @return 记录列表
      */
     public List<UserSteamId> findBindingsByPage(int pageNum, int pageSize) {
-        return ctx.db().getRepository(UserSteamId.class).findPage(pageNum, pageSize);
+        return ctx.getDb().getRepository(UserSteamId.class).findPage(pageNum, pageSize);
     }
 
     /**
@@ -119,7 +119,7 @@ public class SteamStatusService {
      * @return 记录列表；无记录时为空列表
      */
     public List<UserSteamId> findBindingsByUserId(long userId) {
-        return ctx.db().getRepository(UserSteamId.class).findByField("userId", userId);
+        return ctx.getDb().getRepository(UserSteamId.class).findByField("userId", userId);
     }
 
     /**
@@ -129,7 +129,7 @@ public class SteamStatusService {
      * @param steamId steam id
      */
     public void insertBinding(long userId, String steamId) {
-        ctx.db().getRepository(UserSteamId.class).save(new UserSteamId(userId, steamId));
+        ctx.getDb().getRepository(UserSteamId.class).save(new UserSteamId(userId, steamId));
     }
 
     /**
@@ -138,7 +138,7 @@ public class SteamStatusService {
      * @param userId QQ 号
      */
     public void deleteBinding(long userId) {
-        ctx.db().getRepository(UserSteamId.class).deleteByField("userId", userId);
+        ctx.getDb().getRepository(UserSteamId.class).deleteByField("userId", userId);
     }
 
     // ==================== 缓存 ====================
@@ -158,7 +158,7 @@ public class SteamStatusService {
             return;
         }
         int pageCount = (int) ((total + BATCH_SIZE - 1) / BATCH_SIZE);
-        Cache cache = ctx.cache();
+        Cache cache = ctx.getCache();
         for (int page = 0; page < pageCount; page++) {
             for (UserSteamId binding : findBindingsByPage(page, BATCH_SIZE)) {
                 if (binding.getSteamId() != null && !binding.getSteamId().isEmpty()) {
@@ -175,7 +175,7 @@ public class SteamStatusService {
      * @param userId  QQ 号
      */
     public void putIdMapping(String steamId, long userId) {
-        ctx.cache().hashSet(KEY_STEAM_ID_TO_USER_ID, steamId, userId);
+        ctx.getCache().hashSet(KEY_STEAM_ID_TO_USER_ID, steamId, userId);
     }
 
     /**
@@ -184,7 +184,7 @@ public class SteamStatusService {
      * @param steamId steam id
      */
     public void removeIdMapping(String steamId) {
-        ctx.cache().hashDelete(KEY_STEAM_ID_TO_USER_ID, steamId);
+        ctx.getCache().hashDelete(KEY_STEAM_ID_TO_USER_ID, steamId);
     }
 
     /**
@@ -198,7 +198,7 @@ public class SteamStatusService {
             return null;
         }
         // 直接按目标类型读取，取代旧的「hGetAll 拿 Object 再手写 toString 转 Long」
-        return ctx.cache().hashGet(KEY_STEAM_ID_TO_USER_ID, steamId, Long.class)
+        return ctx.getCache().hashGet(KEY_STEAM_ID_TO_USER_ID, steamId, Long.class)
                 .orElse(null);
     }
 
@@ -216,7 +216,7 @@ public class SteamStatusService {
         if (steamId == null) {
             return null;
         }
-        return ctx.cache().hashGet(KEY_STEAM_ID_TO_STATUS, steamId, SinglePlayerSummary.class)
+        return ctx.getCache().hashGet(KEY_STEAM_ID_TO_STATUS, steamId, SinglePlayerSummary.class)
                 .orElse(null);
     }
 
@@ -229,7 +229,7 @@ public class SteamStatusService {
         if (player == null || player.getSteamid() == null) {
             return;
         }
-        ctx.cache().hashSet(KEY_STEAM_ID_TO_STATUS, player.getSteamid(), player);
+        ctx.getCache().hashSet(KEY_STEAM_ID_TO_STATUS, player.getSteamid(), player);
     }
 
     /**
@@ -238,7 +238,7 @@ public class SteamStatusService {
      * @param steamId steam id
      */
     public void removeCachedStatus(String steamId) {
-        ctx.cache().hashDelete(KEY_STEAM_ID_TO_STATUS, steamId);
+        ctx.getCache().hashDelete(KEY_STEAM_ID_TO_STATUS, steamId);
     }
 
     // ==================== Steam 接口 ====================
@@ -263,7 +263,7 @@ public class SteamStatusService {
             return List.of();
         }
         try {
-            PlayerSummariesResponse response = ctx.http()
+            PlayerSummariesResponse response = ctx.getHttp()
                     .get(API_PLAYER_SUMMARIES)
                     .query("key", apiKey)
                     .query("steamids", String.join(",", steamIds))
@@ -309,7 +309,7 @@ public class SteamStatusService {
             return;
         }
         try {
-            AppDetailsApiResponse response = ctx.http()
+            AppDetailsApiResponse response = ctx.getHttp()
                     .get(API_APP_DETAILS)
                     .query("appids", player.getGameid())
                     .query("l", "schinese")
@@ -330,7 +330,7 @@ public class SteamStatusService {
      */
     private String apiKey() {
         try {
-            SteamApiKey key = ctx.config().load(CONFIG_API_KEY, SteamApiKey.class);
+            SteamApiKey key = ctx.getConfig().load(CONFIG_API_KEY, SteamApiKey.class);
             if (key == null || key.getApikey() == null || key.getApikey().isBlank()) {
                 log.error("[Steam] {} 中缺少 apikey 字段", CONFIG_API_KEY);
                 return null;
@@ -360,15 +360,15 @@ public class SteamStatusService {
      */
     public Set<Long> enabledGroupsOfUser(long userId) {
         Set<Long> result = new LinkedHashSet<>();
-        List<BotGroupInfo> groups = ctx.bot().getGroupList().orElse(List.of());
-        ScopeQuery scope = ctx.scope();
+        List<BotGroupInfo> groups = ctx.getBot().getGroupList().orElse(List.of());
+        ScopeQuery scope = ctx.getScope();
         for (BotGroupInfo group : groups) {
             long groupId = group.getGroupId();
             if (!scope.isEnabledIn(groupId)) {
                 continue;
             }
             // 只对「用户确实在这个群里」的群播报，否则会把陌生人的游戏动态发到无关群
-            boolean isMember = ctx.bot()
+            boolean isMember = ctx.getBot()
                     .getGroupMemberInfo(String.valueOf(groupId), String.valueOf(userId))
                     .isPresent();
             if (isMember) {
@@ -388,7 +388,7 @@ public class SteamStatusService {
      * @return 显示名，永不为 {@code null}
      */
     public String memberDisplayName(long groupId, long userId) {
-        return ctx.bot()
+        return ctx.getBot()
                 .getGroupMemberInfo(String.valueOf(groupId), String.valueOf(userId))
                 .map(info -> {
                     String card = info.getCard();
@@ -408,6 +408,6 @@ public class SteamStatusService {
      * @param text    文本内容
      */
     public void broadcast(long groupId, String text) {
-        ctx.sender().group(groupId).text(text).send();
+        ctx.getSender().group(groupId).text(text).send();
     }
 }

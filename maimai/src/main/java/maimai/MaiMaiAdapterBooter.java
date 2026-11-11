@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  *   <tr><td>{@code destroy()} 里手动 {@code destroySingleton} + {@code shutdown()}</td>
  *       <td>{@code ctx.effect(() -> server::shutdown)}——卸载时框架逆序执行</td></tr>
  *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(..., getClass())}</td>
- *       <td>{@code ctx.config().loadOrDefault(...)}——不再需要传自己的 Class</td></tr>
+ *       <td>{@code ctx.getConfig().loadOrDefault(...)}——不再需要传自己的 Class</td></tr>
  * </table>
  *
  * <h2>顺带修掉的两处缺陷</h2>
@@ -52,7 +52,7 @@ public class MaiMaiAdapterBooter implements YuniPlugin {
     private static final String CONFIG_FILE = "maimai_config.json";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("maimai-连接器")
                 .version("0.0.1")
                 .description("启动 WebSocket 服务器，接受 MaiBot-Napcat-Adapter 连接，实现 OneBot 协议核心动作")
@@ -64,11 +64,11 @@ public class MaiMaiAdapterBooter implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        MaiMaiConfig config = ctx.config().loadOrDefault(CONFIG_FILE, MaiMaiConfig.class, new MaiMaiConfig());
+        MaiMaiConfig config = ctx.getConfig().loadOrDefault(CONFIG_FILE, MaiMaiConfig.class, new MaiMaiConfig());
         int port = config.getPort();
         log.info("[MaiMai] 启动服务器，端口: {}", port);
 
-        MaiMaiWsServer server = new MaiMaiWsServer(port, ctx.bot(), ctx.service(JsonCodec.class));
+        MaiMaiWsServer server = new MaiMaiWsServer(port, ctx.getBot(), ctx.service(JsonCodec.class));
         server.setHeartbeatIntervalMs(config.getHeartbeatIntervalMs());
 
         // 声明框架不认识的资源：WS 服务器 + 心跳线程池。

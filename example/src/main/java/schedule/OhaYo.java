@@ -20,7 +20,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
  *   <tr><td>{@code getAction()} 返回 {@code Action}</td>
  *       <td>直接传 lambda，不需要 {@code Action} 这层包装</td></tr>
  *   <tr><td>{@code PluginUtils.getBotMasterId()}</td><td>{@code ctx.service(Bot.class).getMasterId()}</td></tr>
- *   <tr><td>{@code SpringContextUtil.getBean(YuniBot.class)}</td><td>{@code ctx.sender()} 或 {@code ctx.bot()}</td></tr>
+ *   <tr><td>{@code SpringContextUtil.getBean(YuniBot.class)}</td><td>{@code ctx.getSender()} 或 {@code ctx.getBot()}</td></tr>
  *   <tr><td>{@code enable()} / {@code disable()} 空实现</td>
  *       <td><b>方法消失</b>——启停由 {@code ScopeFilter} 表达，不涉及插件代码</td></tr>
  * </table>
@@ -31,7 +31,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
  *   以群组为粒度的开启/关闭的管理」
  * </blockquote>
  * <p>新系统中这个限制不再存在：主动插件同样受 {@code ScopeFilter} 约束，
- * 且可用 {@link com.yuier.yuni.plugin.api.ScopeQuery}（{@code ctx.scope()}）
+ * 且可用 {@link com.yuier.yuni.plugin.api.ScopeQuery}（{@code ctx.getScope()}）
  * 主动查询「本插件在某群是否生效」。本插件是私聊播报，因此无需查询；
  * 需要按群广播的主动插件（如疯狂星期四）请参考
  * {@code crazy-thursday} 模块的写法。</p>
@@ -42,7 +42,7 @@ public class OhaYo implements YuniPlugin {
     private static final String GREETING = "偶哈哟，欧尼酱！";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("定时插件示例")
                 .version("0.0.1")
                 .description("定时任务插件示例")
@@ -57,7 +57,7 @@ public class OhaYo implements YuniPlugin {
         // 每天 10:00 向 bot 主人发私聊问候
         ctx.schedule(
                 CronExpressionBuilder.create().dailyAt(10, 0).build(),
-                () -> ctx.sender()
+                () -> ctx.getSender()
                         .privateChat(ctx.service(com.yuier.yuni.core.model.bot.Bot.class).getMasterId())
                         .text(GREETING)
                         .send());

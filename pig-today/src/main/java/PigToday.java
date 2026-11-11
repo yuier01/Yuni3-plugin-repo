@@ -29,11 +29,11 @@ import java.util.concurrent.ThreadLocalRandom;
  *   <tr><td>{@code execute()} 里 {@code if (hasArg) ... else ...} 分派</td>
  *       <td>同一个处理器内分支（单命令单参数，无需拆成子命令）</td></tr>
  *   <tr><td>{@code RedisUtil.exists + get + 手写 Map 序列化}</td>
- *       <td>{@code ctx.cache().hashHasKey / hashGet / hashSet}</td></tr>
- *   <tr><td>{@code PluginUtils.simpleGet}</td><td>{@code ctx.http().get(...).execute(...)}</td></tr>
+ *       <td>{@code ctx.getCache().hashHasKey / hashGet / hashSet}</td></tr>
+ *   <tr><td>{@code PluginUtils.simpleGet}</td><td>{@code ctx.getHttp().get(...).execute(...)}</td></tr>
  *   <tr><td>{@code PluginUtils.getGroupMemberName(gid, qq)}
  *       ——额外调一次 {@code get_group_member_info}</td>
- *       <td>仍用 {@code ctx.bot()} 查询（命令事件未携带目标成员的群名片）</td></tr>
+ *       <td>仍用 {@code ctx.getBot()} 查询（命令事件未携带目标成员的群名片）</td></tr>
  * </table>
  *
  * <h2>顺带修掉的两处缺陷</h2>
@@ -75,7 +75,7 @@ public class PigToday implements YuniPlugin {
             .build();
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("今日猪猪")
                 .version("0.0.1")
                 .description("今天你是什么猪？")
@@ -128,7 +128,7 @@ public class PigToday implements YuniPlugin {
         String field = cacheField(userId);
 
         // 先查缓存
-        PigTodayResult cached = ctx.cache().hashGet(CACHE_KEY, field, PigTodayResult.class).orElse(null);
+        PigTodayResult cached = ctx.getCache().hashGet(CACHE_KEY, field, PigTodayResult.class).orElse(null);
         if (cached != null && LocalDate.now().toString().equals(cached.getDate())) {
             return cached.getImageTitle() + "\n" + IMAGE_BASE_URL + cached.getImageUrl();
         }
@@ -140,7 +140,7 @@ public class PigToday implements YuniPlugin {
         }
         fresh.setDate(LocalDate.now().toString());
         // 写入哈希字段：取代旧实现的「先建空 Map 再二次读取后写入」
-        ctx.cache().hashSet(CACHE_KEY, field, fresh);
+        ctx.getCache().hashSet(CACHE_KEY, field, fresh);
         return fresh.getImageTitle() + "\n" + IMAGE_BASE_URL + fresh.getImageUrl();
     }
 
@@ -153,7 +153,7 @@ public class PigToday implements YuniPlugin {
     private PigTodayResult fetchRandom(YuniContext ctx) {
         PigImageList response;
         try {
-            response = ctx.http().get(API_ALL_IMAGES).execute(PigImageList.class);
+            response = ctx.getHttp().get(API_ALL_IMAGES).execute(PigImageList.class);
         } catch (Http.HttpException e) {
             // 外部接口失败不应打挂命令：记录并降级为一条提示
             log.warn("[今日猪猪] 猪图接口调用失败: {}", e.getMessage());
@@ -183,7 +183,7 @@ public class PigToday implements YuniPlugin {
         if (groupId == null) {
             return String.valueOf(userId);
         }
-        return ctx.bot()
+        return ctx.getBot()
                 .getGroupMemberInfo(String.valueOf(groupId), String.valueOf(userId))
                 .map(info -> {
                     String card = info.getCard();

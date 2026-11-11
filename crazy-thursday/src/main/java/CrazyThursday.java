@@ -58,7 +58,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>旧 {@code CrazyThursdayUtil} 在广播前逐个群查
  * {@code PluginEnableProcessor.isPluginEnabled(groupId, CrazyThursday.class)}——
  * 直接依赖框架内部 API。新实现改用
- * {@link com.yuier.yuni.plugin.api.ScopeQuery}（{@code ctx.scope()}），
+ * {@link com.yuier.yuni.plugin.api.ScopeQuery}（{@code ctx.getScope()}），
  * 这是稳定的插件侧契约。</p>
  *
  * <h2>与 {@link StartAtThursday} 的分工</h2>
@@ -91,7 +91,7 @@ public class CrazyThursday implements YuniPlugin {
     private static final String SENTENCE_FILE = "sentences.json";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("疯狂星期四")
                 .version("0.0.1")
                 .description("每周四随机发送疯四文案")
@@ -123,7 +123,7 @@ public class CrazyThursday implements YuniPlugin {
             return;
         }
         List<Long> points = chooseTimePoints(startOfTodayMillis());
-        ctx.cache().set(ScheduleCache.REDIS_KEY,
+        ctx.getCache().set(ScheduleCache.REDIS_KEY,
                 new ScheduleCache(LocalDate.now().toString(), points));
         log.info("[疯狂星期四] 今日投放时间点已生成: {}", points);
     }
@@ -140,14 +140,14 @@ public class CrazyThursday implements YuniPlugin {
         if (!LocalDate.now().getDayOfWeek().equals(java.time.DayOfWeek.THURSDAY)) {
             return;
         }
-        ScheduleCache cache = ctx.cache()
+        ScheduleCache cache = ctx.getCache()
                 .get(ScheduleCache.REDIS_KEY, ScheduleCache.class)
                 .orElse(null);
         List<Long> points;
         if (cache == null || !LocalDate.now().toString().equals(cache.getDate())) {
             // 缓存缺失或不属于今天：即时生成并写入
             points = chooseTimePoints(startOfTodayMillis());
-            ctx.cache().set(ScheduleCache.REDIS_KEY,
+            ctx.getCache().set(ScheduleCache.REDIS_KEY,
                     new ScheduleCache(LocalDate.now().toString(), points));
         } else {
             points = cache.getTimePoints();
@@ -156,7 +156,7 @@ public class CrazyThursday implements YuniPlugin {
         List<Long> waits = calculateWaits(points, System.currentTimeMillis());
         for (Long wait : waits) {
             // 等待前检查插件是否已被卸载：否则卸载后仍会继续发送
-            if (ctx.disposed()) {
+            if (ctx.isDisposed()) {
                 log.info("[疯狂星期四] 插件已卸载，中止本次投放");
                 return;
             }
@@ -189,7 +189,7 @@ public class CrazyThursday implements YuniPlugin {
             return;
         }
 
-        String[] sentences = ctx.config().load(SENTENCE_FILE, String[].class);
+        String[] sentences = ctx.getConfig().load(SENTENCE_FILE, String[].class);
         if (sentences == null || sentences.length == 0) {
             log.warn("[疯狂星期四] 文案配置为空，跳过本次投放");
             return;
@@ -197,13 +197,13 @@ public class CrazyThursday implements YuniPlugin {
         String sentence = sentences[ThreadLocalRandom.current().nextInt(sentences.length)];
 
         // 只向启用了本插件的群发送——取代旧实现对 PluginEnableProcessor 的直接依赖
-        com.yuier.yuni.plugin.api.ScopeQuery scope = ctx.scope();
-        for (BotGroupInfo group : ctx.bot().getGroupList().orElse(List.of())) {
+        com.yuier.yuni.plugin.api.ScopeQuery scope = ctx.getScope();
+        for (BotGroupInfo group : ctx.getBot().getGroupList().orElse(List.of())) {
             Long groupId = group.getGroupId();
             if (!scope.isEnabledIn(groupId)) {
                 continue;
             }
-            ctx.sender().group(groupId).text(sentence).send();
+            ctx.getSender().group(groupId).text(sentence).send();
         }
     }
 

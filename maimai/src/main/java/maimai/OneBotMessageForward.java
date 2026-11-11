@@ -29,11 +29,11 @@ import java.util.List;
  *       <td>{@code inject()} 声明依赖 {@link MaiMaiApi}，由框架在依赖就绪后才加载；
  *       服务缺失时插件停在 PENDING 并在启动结束时报错</td></tr>
  *   <tr><td>{@code event.getRawJson()}（core 事件对象）</td>
- *       <td>{@code ev.rawJson()}（插件侧事件视图的逃生舱，语义相同）</td></tr>
+ *       <td>{@code ev.getRawJson()}（插件侧事件视图的逃生舱，语义相同）</td></tr>
  * </table>
  *
  * <h2>为什么这里用 {@code rawJson()}，是不是违背了「插件不该依赖 rawJson」</h2>
- * <p>{@code Event.rawJson()} 的文档说它「仅用于诊断、日志、以及管理端推送」，
+ * <p>{@code Event.getRawJson()} 的文档说它「仅用于诊断、日志、以及管理端推送」，
  * 并建议插件业务逻辑不要依赖它。本插件正是那个例外，而且是有理由的例外：</p>
  * <ul>
  *   <li>它的职责就是<b>透传</b>——把 Yuni 收到的 OneBot 事件原封不动交给另一个
@@ -53,7 +53,7 @@ import java.util.List;
 public class OneBotMessageForward implements YuniPlugin {
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("maimai-消息转发")
                 .version("0.0.1")
                 .description("将 QQ 群聊/私聊消息（非命令）转发给 maimai")
@@ -83,7 +83,7 @@ public class OneBotMessageForward implements YuniPlugin {
 
         // 「无条件」显式写出：取代旧实现里那个覆写 match() 恒返回 true 的匿名子类
         ctx.onMessage(ev -> true, (ev, reply) -> {
-            String rawJson = ev.rawJson();
+            String rawJson = ev.getRawJson();
             if (rawJson == null || rawJson.isBlank()) {
                 // 某些适配器不上报原始 JSON；此时无法透传
                 log.debug("[MaiMai] 事件缺少原始 JSON，跳过转发: {}", ev.toLogString());

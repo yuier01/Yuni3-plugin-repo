@@ -39,13 +39,13 @@ import static com.microsoft.playwright.options.WaitForSelectorState.VISIBLE;
  *   <caption>旧 → 新</caption>
  *   <tr><th>旧实现</th><th>新实现</th></tr>
  *   <tr><td>{@code PluginUtils.getBean(PluginContainer.class)}</td>
- *       <td>{@link PluginAdmin}（经 {@code ctx.plugins()}）</td></tr>
+ *       <td>{@link PluginAdmin}（经 {@code ctx.getPlugins()}）</td></tr>
  *   <tr><td>{@code PluginUtils.getBean(PluginEnableProcessor.class)}</td>
  *       <td>{@code PluginAdmin.isEnabledIn(pluginId, groupId)}</td></tr>
  *   <tr><td>{@code RedisUtil.hGetAll / hSet} 读整个哈希再取值</td>
- *       <td>{@code ctx.cache().hashGet / hashSet} 单字段读写</td></tr>
+ *       <td>{@code ctx.getCache().hashGet / hashSet} 单字段读写</td></tr>
  *   <tr><td>{@code PluginUtils.loadTextFromPluginFolder(file, this.getClass())}</td>
- *       <td>{@code ctx.config().loadText(file)}</td></tr>
+ *       <td>{@code ctx.getConfig().loadText(file)}</td></tr>
  *   <tr><td>全部静态方法</td><td>实例方法（渲染/截屏等纯函数仍为静态）</td></tr>
  * </table>
  *
@@ -108,7 +108,7 @@ public class PluginManageSupport {
      */
     public PluginManageSupport(YuniContext ctx) {
         this.ctx = ctx;
-        this.admin = ctx.plugins();
+        this.admin = ctx.getPlugins();
     }
 
     // ==================== 数据组装 ====================
@@ -125,8 +125,8 @@ public class PluginManageSupport {
      */
     public List<PluginListElement> assemblePluginList(long groupId) {
         List<PluginListElement> elements = new ArrayList<>();
-        for (PluginModuleView module : admin.modules()) {
-            List<PluginView> plugins = module.plugins();
+        for (PluginModuleView module : admin.getModules()) {
+            List<PluginView> plugins = module.getPlugins();
             if (plugins.isEmpty()) {
                 // 模块下没有任何插件（例如 jar 里没有 YuniPlugin 实现）：
                 // 不展示，否则用户会看到一个永远打不开的空卡片
@@ -136,7 +136,7 @@ public class PluginManageSupport {
                 elements.add(new PluginListElement(toListElement(plugins.get(0), groupId)));
             } else {
                 PluginListModule listModule = new PluginListModule();
-                listModule.setModuleName(module.name());
+                listModule.setModuleName(module.getName());
                 for (PluginView plugin : plugins) {
                     listModule.addSubPlugin(toListElement(plugin, groupId));
                 }
@@ -155,10 +155,10 @@ public class PluginManageSupport {
      */
     private PluginListSinglePlugin toListElement(PluginView plugin, long groupId) {
         return new PluginListSinglePlugin(
-                plugin.id(),
-                plugin.name(),
-                plugin.description(),
-                admin.isEnabledIn(plugin.id(), groupId));
+                plugin.getId(),
+                plugin.getName(),
+                plugin.getDescription(),
+                admin.isEnabledIn(plugin.getId(), groupId));
     }
 
     /**
@@ -170,18 +170,18 @@ public class PluginManageSupport {
      */
     public PluginDetail toDetail(PluginView plugin, long groupId) {
         return new PluginDetail(
-                plugin.id(),
-                plugin.name(),
-                plugin.description(),
-                plugin.tips(),
-                plugin.author(),
-                plugin.version(),
-                admin.isEnabledIn(plugin.id(), groupId),
-                plugin.moduleId(),
-                plugin.state().displayName(),
-                plugin.state().name().toLowerCase(),
-                plugin.failureSummary().orElse(null),
-                plugin.missingServices());
+                plugin.getId(),
+                plugin.getName(),
+                plugin.getDescription(),
+                plugin.getTips(),
+                plugin.getAuthor(),
+                plugin.getVersion(),
+                admin.isEnabledIn(plugin.getId(), groupId),
+                plugin.getModuleId(),
+                plugin.getState().getDisplayName(),
+                plugin.getState().name().toLowerCase(),
+                plugin.getFailureSummary().orElse(null),
+                plugin.getMissingServices());
     }
 
     // ==================== 内容哈希 ====================
@@ -201,14 +201,14 @@ public class PluginManageSupport {
      */
     public int hashCodeOfList(long groupId) {
         List<Integer> moduleHashes = new ArrayList<>();
-        for (PluginModuleView module : admin.modules()) {
+        for (PluginModuleView module : admin.getModules()) {
             List<Integer> pluginHashes = new ArrayList<>();
-            for (PluginView plugin : module.plugins()) {
+            for (PluginView plugin : module.getPlugins()) {
                 pluginHashes.add(Objects.hash(
-                        plugin.name(),
-                        plugin.description(),
-                        plugin.state(),
-                        admin.isEnabledIn(plugin.id(), groupId)));
+                        plugin.getName(),
+                        plugin.getDescription(),
+                        plugin.getState(),
+                        admin.isEnabledIn(plugin.getId(), groupId)));
             }
             // 排序消除顺序影响：模块内插件的顺序变化不应导致重新渲染
             pluginHashes.sort(Integer::compareTo);
@@ -227,16 +227,16 @@ public class PluginManageSupport {
      */
     public int hashCodeOfDetail(PluginView plugin, long groupId) {
         return Objects.hash(
-                plugin.name(),
-                plugin.description(),
-                plugin.tips(),
-                plugin.author(),
-                plugin.version(),
-                plugin.moduleId(),
-                plugin.state(),
-                plugin.failureSummary().orElse(null),
-                plugin.missingServices(),
-                admin.isEnabledIn(plugin.id(), groupId));
+                plugin.getName(),
+                plugin.getDescription(),
+                plugin.getTips(),
+                plugin.getAuthor(),
+                plugin.getVersion(),
+                plugin.getModuleId(),
+                plugin.getState(),
+                plugin.getFailureSummary().orElse(null),
+                plugin.getMissingServices(),
+                admin.isEnabledIn(plugin.getId(), groupId));
     }
 
     // ==================== 缓存 ====================
@@ -250,7 +250,7 @@ public class PluginManageSupport {
      */
     public Integer loadHashCode(String cacheKey, String field) {
         // 单字段读取：取代旧实现的「hGetAll 拉回全部会话再取值」
-        return ctx.cache().hashGet(cacheKey, field, Integer.class).orElse(null);
+        return ctx.getCache().hashGet(cacheKey, field, Integer.class).orElse(null);
     }
 
     /**
@@ -261,7 +261,7 @@ public class PluginManageSupport {
      * @param hashCode 哈希值
      */
     public void saveHashCode(String cacheKey, String field, int hashCode) {
-        ctx.cache().hashSet(cacheKey, field, hashCode);
+        ctx.getCache().hashSet(cacheKey, field, hashCode);
     }
 
     /**
@@ -272,7 +272,7 @@ public class PluginManageSupport {
      * @return 形如 {@code base64://...} 的图片引用；不存在时返回 {@code null}
      */
     public String loadImage(String cacheKey, String field) {
-        return ctx.cache().hashGet(cacheKey, field, String.class).orElse(null);
+        return ctx.getCache().hashGet(cacheKey, field, String.class).orElse(null);
     }
 
     /**
@@ -283,7 +283,7 @@ public class PluginManageSupport {
      * @param image    形如 {@code base64://...} 的图片引用
      */
     public void saveImage(String cacheKey, String field, String image) {
-        ctx.cache().hashSet(cacheKey, field, image);
+        ctx.getCache().hashSet(cacheKey, field, image);
     }
 
     /**
@@ -307,7 +307,7 @@ public class PluginManageSupport {
      * @return 形如 {@code base64://...} 的图片引用；失败时返回 {@code null}
      */
     public String renderToBase64(String templateFile, java.util.Map<String, Object> variables) {
-        String template = ctx.config().loadText(templateFile);
+        String template = ctx.getConfig().loadText(templateFile);
         Context context = new Context();
         variables.forEach(context::setVariable);
         String html = renderToHtml(template, context);

@@ -52,7 +52,7 @@ public class ChieruTrans implements YuniPlugin {
     private static final String TRANS_MAP_FILE = "trans-map.json";
 
     @Override
-    public PluginMetadata metadata() {
+    public PluginMetadata getMetadata() {
         return PluginMetadata.of("切噜语转换")
                 .version("0.0.1")
                 .description("切噜语转换")
@@ -67,7 +67,7 @@ public class ChieruTrans implements YuniPlugin {
     @Override
     public void apply(YuniContext ctx) {
         // 映射表是静态资源：加载时读一次，失败即让插件进入 FAILED（可观测）
-        TransMap transMap = ctx.config().load(TRANS_MAP_FILE, TransMap.class);
+        TransMap transMap = ctx.getConfig().load(TRANS_MAP_FILE, TransMap.class);
         List<String> chieruMap = transMap.getChieru();
         if (chieruMap == null || chieruMap.size() < 16) {
             throw new IllegalStateException(
