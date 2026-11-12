@@ -40,9 +40,9 @@ import java.util.concurrent.ThreadLocalRandom;
  *   <tr><td>{@code RedisUtil.exists + get + 手写 Map 序列化}</td>
  *       <td>{@code ctx.getCache().hashGet / hashSet / hashDelete}</td></tr>
  *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(..., this.getClass())}</td>
- *       <td>{@code ctx.getConfig().load(...)}——不再需要把「我是谁」当参数传进去</td></tr>
+ *       <td>{@code ctx.getConfigLoader().load(...)}——不再需要把「我是谁」当参数传进去</td></tr>
  *   <tr><td>{@code PluginUtils.loadFontFromPlugin(..., Fortune.class)}</td>
- *       <td>{@code ctx.getConfig().open(...)} + {@code Font.createFont}，并把结果缓存</td></tr>
+ *       <td>{@code ctx.getConfigLoader().open(...)} + {@code Font.createFont}，并把结果缓存</td></tr>
  *   <tr><td>{@code PluginUtils.getPluginRootPath(this.getClass())} 拼图片路径</td>
  *       <td>{@code ctx.getDataDir().resolve(...)}</td></tr>
  *   <tr><td>抽签结果直接拼 {@code MessageChain(ImageSegment)}</td>
@@ -129,7 +129,7 @@ public class Fortune implements YuniPlugin {
         // 签库在注册时读一次即可。旧实现在每次执行时都读盘 + 反序列化，
         // 而这份配置是随插件发布的静态资源，运行期不会变。
         List<PrincessFortune> princessFortunes =
-                List.of(ctx.getConfig().load(CONFIG_PCR, PrincessFortune[].class));
+                List.of(ctx.getConfigLoader().load(CONFIG_PCR, PrincessFortune[].class));
 
         ctx.command(Commands.on(ROOT, (event, reply) -> {
             // 命令处理器收到的是命令引擎的原生事件，取值方式与旧 execute() 一致
@@ -404,7 +404,7 @@ public class Fortune implements YuniPlugin {
      * @throws IOException 字体文件缺失或格式不支持
      */
     private Font loadFont(YuniContext ctx, String fileName, int size) throws IOException {
-        try (InputStream in = ctx.getConfig().open(fileName)) {
+        try (InputStream in = ctx.getConfigLoader().open(fileName)) {
             return Font.createFont(Font.TRUETYPE_FONT, in).deriveFont((float) size);
         } catch (java.awt.FontFormatException e) {
             throw new IOException("字体格式不支持: " + fileName, e);
