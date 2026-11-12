@@ -67,7 +67,7 @@ public class ChieruTrans implements YuniPlugin {
     @Override
     public void apply(YuniContext ctx) {
         // 映射表是静态资源：加载时读一次，失败即让插件进入 FAILED（可观测）
-        TransMap transMap = ctx.getConfig().load(TRANS_MAP_FILE, TransMap.class);
+        TransMap transMap = ctx.getConfigLoader().load(TRANS_MAP_FILE, TransMap.class);
         List<String> chieruMap = transMap.getChieru();
         if (chieruMap == null || chieruMap.size() < 16) {
             throw new IllegalStateException(

@@ -37,7 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * <p>新实现用插件系统的服务机制：{@code MaiMaiAdapterBooter} 在
  * {@code apply} 里 {@code ctx.registerService(MaiMaiApi.class, server)}，
- * {@code OneBotMessageForward} 通过 {@code ctx.findService(MaiMaiApi.class)}
+ * {@code OneBotMessageForward} 通过 {@code ctx.tryFindService(MaiMaiApi.class)}
  * 按<b>类型</b>解析。卸载时随 PluginEffect 自动注销，无需手动清理。</p>
  *
  * <p>本接口只暴露 {@code OneBotMessageForward} 真正需要的能力。

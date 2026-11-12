@@ -63,7 +63,7 @@ public class HooTrans implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        TransMap transMap = ctx.getConfig().load(TRANS_MAP_FILE, TransMap.class);
+        TransMap transMap = ctx.getConfigLoader().load(TRANS_MAP_FILE, TransMap.class);
         List<String> hooMap = transMap.getHoo();
         if (hooMap == null || hooMap.size() < 16) {
             throw new IllegalStateException(

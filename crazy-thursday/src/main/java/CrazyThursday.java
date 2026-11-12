@@ -236,7 +236,7 @@ public class CrazyThursday implements YuniPlugin {
             return;
         }
 
-        String[] sentences = ctx.getConfig().load(SENTENCE_FILE, String[].class);
+        String[] sentences = ctx.getConfigLoader().load(SENTENCE_FILE, String[].class);
         if (sentences == null || sentences.length == 0) {
             log.warn("[疯狂星期四] 文案配置为空，跳过本次投放");
             return;

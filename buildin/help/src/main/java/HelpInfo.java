@@ -14,7 +14,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
  *   <tr><td>{@code extends CommandPlugin} + {@code getDetector()}/{@code execute()} 两段式</td>
  *       <td>{@code Commands.on(ROOT, handler)} 就地绑定</td></tr>
  *   <tr><td>{@code PluginUtils.loadTextFromPluginFolder(file, this.getClass())}</td>
- *       <td>{@code ctx.getConfig().loadText(file)}——不再需要传自己的 Class</td></tr>
+ *       <td>{@code ctx.getConfigLoader().loadText(file)}——不再需要传自己的 Class</td></tr>
  *   <tr><td>{@code eventContext.getChatSession().response(helpInfoStr)}</td>
  *       <td>{@code reply.quote().text(helpInfoStr).send()}</td></tr>
  * </table>
@@ -53,6 +53,6 @@ public class HelpInfo implements YuniPlugin {
     @Override
     public void apply(YuniContext ctx) {
         ctx.command(Commands.on(ROOT, (event, reply) ->
-                reply.quote().text(ctx.getConfig().loadText(HELP_FILE)).send()));
+                reply.quote().text(ctx.getConfigLoader().loadText(HELP_FILE)).send()));
     }
 }

@@ -23,7 +23,7 @@ import java.util.List;
  *   <tr><td>{@code PluginUtils.simplePost(url, null, C.class)}</td>
  *       <td>{@code ctx.getHttp().post(url).execute(C.class)}</td></tr>
  *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(..., this.getClass())}</td>
- *       <td>{@code ctx.getConfig().loadOrDefault(...)}</td></tr>
+ *       <td>{@code ctx.getConfigLoader().loadOrDefault(...)}</td></tr>
  *   <tr><td>{@code DBHelper.findBlackLists() / findWhiteLists()}
  *       ——插件自建的 {@code daily_news_group_enable} 表</td>
  *       <td>{@code ctx.getScope().isEnabledIn(groupId)}——框架的群粒度启停</td></tr>

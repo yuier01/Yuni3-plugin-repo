@@ -4,7 +4,6 @@ import com.yuier.yuni.core.bot.BotGroupInfo;
 import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
-import com.yuier.yuni.plugin.api.service.ConfigLoader;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,7 +25,7 @@ import java.util.Set;
  *       在注册后 {@code CompletableFuture.runAsync} 执行一次</td>
  *       <td>{@code ctx.runNow(...)}——主动能力的表达就是这一行调用</td></tr>
  *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(name, C.class, getClass())}</td>
- *       <td>{@code ctx.getConfig().load(name, C.class)}——不再需要传自己的 Class</td></tr>
+ *       <td>{@code ctx.getConfigLoader().load(name, C.class)}——不再需要传自己的 Class</td></tr>
  * </table>
  *
  * <h2>关于「即时插件」这一类型被取消的理由</h2>
@@ -69,7 +68,7 @@ public class IAmBack implements YuniPlugin {
      * @param ctx 插件上下文
      */
     private void broadcast(YuniContext ctx) {
-        TargetGroupConfig config = ctx.getConfig().load("i_m_back.json", TargetGroupConfig.class);
+        TargetGroupConfig config = ctx.getConfigLoader().load("i_m_back.json", TargetGroupConfig.class);
         List<Long> targets = config.getTargetGroups();
         if (targets == null || targets.isEmpty()) {
             log.info("未配置目标群，跳过播报");
@@ -88,7 +87,7 @@ public class IAmBack implements YuniPlugin {
                 log.debug("目标群 {} 不存在或机器人未加入，跳过", groupId);
                 continue;
             }
-            // Sender 内部已捕获发送异常并返回失败结果，无需 try/catch
+            // MessageSender 内部已捕获发送异常并返回失败结果，无需 try/catch
             ctx.getSender().group(groupId).text(MESSAGE).send();
         }
     }

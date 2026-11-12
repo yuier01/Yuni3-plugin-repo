@@ -45,7 +45,7 @@ import static com.microsoft.playwright.options.WaitForSelectorState.VISIBLE;
  *   <tr><td>{@code RedisUtil.hGetAll / hSet} 读整个哈希再取值</td>
  *       <td>{@code ctx.getCache().hashGet / hashSet} 单字段读写</td></tr>
  *   <tr><td>{@code PluginUtils.loadTextFromPluginFolder(file, this.getClass())}</td>
- *       <td>{@code ctx.getConfig().loadText(file)}</td></tr>
+ *       <td>{@code ctx.getConfigLoader().loadText(file)}</td></tr>
  *   <tr><td>全部静态方法</td><td>实例方法（渲染/截屏等纯函数仍为静态）</td></tr>
  * </table>
  *
@@ -307,7 +307,7 @@ public class PluginManageSupport {
      * @return 形如 {@code base64://...} 的图片引用；失败时返回 {@code null}
      */
     public String renderToBase64(String templateFile, Map<String, Object> variables) {
-        String template = ctx.getConfig().loadText(templateFile);
+        String template = ctx.getConfigLoader().loadText(templateFile);
         Context context = new Context();
         variables.forEach(context::setVariable);
         String html = renderToHtml(template, context);

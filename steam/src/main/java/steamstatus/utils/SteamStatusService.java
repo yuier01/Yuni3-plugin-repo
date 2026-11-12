@@ -331,7 +331,7 @@ public class SteamStatusService {
      */
     private String apiKey() {
         try {
-            SteamApiKey key = ctx.getConfig().load(CONFIG_API_KEY, SteamApiKey.class);
+            SteamApiKey key = ctx.getConfigLoader().load(CONFIG_API_KEY, SteamApiKey.class);
             if (key == null || key.getApikey() == null || key.getApikey().isBlank()) {
                 log.error("[Steam] {} 中缺少 apikey 字段", CONFIG_API_KEY);
                 return null;
