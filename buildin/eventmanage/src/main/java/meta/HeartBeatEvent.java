@@ -1,6 +1,5 @@
 package meta;
 
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -42,16 +41,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HeartBeatEvent implements YuniPlugin {
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("OneBot 心跳事件处理")
-                .version("0.0.1")
-                .description("OneBot 心跳事件处理")
-                .author("Yuier me@yuier.com")
-                .tip("接收心跳事件，打印连接状态与心跳间隔")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

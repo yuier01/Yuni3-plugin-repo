@@ -3,7 +3,6 @@ import com.yuier.yuni.core.model.message.segment.AtSegment;
 import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import com.yuier.yuni.plugin.api.service.YuniHttp;
@@ -74,18 +73,6 @@ public class PigToday implements YuniPlugin {
             .arg(ArgDef.optional(ARG_TARGET_MEMBER, "猪猪名称", CommandArgRequireType.AT))
             .build();
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("今日猪猪")
-                .version("0.0.1")
-                .description("今天你是什么猪？")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 `/今日猪猪` ，查看自己今天是什么猪")
-                .tip("向群聊发送 `/今日猪猪 {@someone}` ，查看群友今天是什么猪")
-                .tip("一天内重复查看，猪设不变")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

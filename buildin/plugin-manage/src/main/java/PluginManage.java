@@ -5,9 +5,9 @@ import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
 import com.yuier.yuni.plugin.api.PluginAdmin;
 import com.yuier.yuni.plugin.api.PluginAdminException;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.PluginView;
 import com.yuier.yuni.plugin.api.Reply;
+import com.yuier.yuni.plugin.api.PluginDeclaration;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import entity.PluginDetail;
@@ -114,21 +114,11 @@ public class PluginManage implements YuniPlugin {
     /** 参数名：插件标识（重载用，可选且支持全部）。 */
     private static final String ARG_RELOAD_TARGET = "插件";
 
+
     @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("插件管理")
-                .version("0.0.1")
-                .description("查看、开启、关闭与重载插件")
-                .author("Yuier me@yuier.com")
-                .tip("`/插件 查看` 查看插件列表")
-                .tip("`/插件 查看 {插件标识}` 查看指定插件详情")
-                .tip("`/插件 开启 {插件标识}` 在当前群开启指定插件")
-                .tip("`/插件 关闭 {插件标识}` 在当前群关闭指定插件")
-                .tip("`/插件 重载` 重载全部 jar")
-                .tip("`/插件 重载 {插件标识}` 重载该插件所在的 jar")
-                .defaultEnable(true)
-                .buildIn(true)
-                .build();
+    public PluginDeclaration getDeclaration() {
+        // 内置插件：只有 bot 拥有者能启停
+        return PluginDeclaration.of("PluginManage").buildIn(true).build();
     }
 
     @Override
@@ -532,8 +522,10 @@ public class PluginManage implements YuniPlugin {
      * @return jar 标识；找不到时返回 {@code null}
      */
     private String selfArtifactId(PluginAdmin admin) {
+        String selfId = getDeclaration().getId();
+        String suffix = "/" + selfId;
         for (PluginView plugin : admin.getPlugins()) {
-            if (getMetadata().getName().equals(plugin.getName())) {
+            if (plugin.getId().equals(selfId) || plugin.getId().endsWith(suffix)) {
                 return plugin.getArtifactId();
             }
         }

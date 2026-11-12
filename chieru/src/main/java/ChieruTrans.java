@@ -2,7 +2,6 @@ import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.core.enums.CommandArgRequireType;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import util.TransMap;
@@ -51,18 +50,6 @@ public class ChieruTrans implements YuniPlugin {
     /** 映射表文件名（位于插件资源目录）。 */
     private static final String TRANS_MAP_FILE = "trans-map.json";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("切噜语转换")
-                .version("0.0.1")
-                .description("切噜语转换")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 “/切噜 转换 {文本}” 可以将文本转换为切噜语")
-                .tip("向群聊发送 “/切噜 还原 {切噜语文本}” 可以将切噜语还原为原始文本")
-                .tip("不同机器人的切噜语实现方式不同，尝试还原其他机器人生成的切噜语极大概率可能失败")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

@@ -1,4 +1,16 @@
 {
-  "id": "fortune",
-  "name": "今日运势"
+  "plugins": {
+    "Fortune": {
+      "description": "今日运势",
+      "tips": [
+        "向群聊发送 `/运势` ，查看自己今天的运势",
+        "一天内重复查看，运势不变"
+      ],
+      "name": "今日运势",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "今日运势",
+  "id": "fortune"
 }

@@ -1,7 +1,6 @@
 package maimai;
 
 import com.yuier.yuni.core.bot.JsonCodec;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -35,17 +34,6 @@ public class MaiMai implements YuniPlugin {
     /** 配置文件名（相对插件资源目录）。 */
     private static final String CONFIG_FILE = "maimai_config.json";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("maimai 适配器")
-                .version("0.0.1")
-                .description("启动 WebSocket 服务器接受 MaiBot-Napcat-Adapter 连接，并转发 QQ 消息")
-                .author("Yuier me@yuier.com")
-                .tip("NapCat ←→ Yuni ←→ maimai 双向中转")
-                .tip("不转发命令消息，maimai 专注于群聊自然对话")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

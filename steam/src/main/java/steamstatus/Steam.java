@@ -4,7 +4,6 @@ import com.yuier.yuni.core.util.CronExpressionBuilder;
 import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -46,18 +45,6 @@ public class Steam implements YuniPlugin {
     /** 参数名：steam id。 */
     private static final String ARG_STEAM_ID = "ID参数";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("Steam 状态监控与绑定")
-                .version("0.0.1")
-                .description("监控群友的 steam 游戏状态，并提供绑定/解绑命令")
-                .author("Yuier me@yuier.com")
-                .tip("群友绑定 steam id 后，其开始/停止/更换游戏时 bot 会在群内播报")
-                .tip("向群聊发送 `/steam 绑定id {steam id}` 命令绑定 steam id")
-                .tip("向群聊发送 `/steam 解绑id` 命令解绑 steam id")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

@@ -1,5 +1,4 @@
 import com.yuier.yuni.core.bot.BotGroupInfo;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import lombok.AllArgsConstructor;
@@ -90,16 +89,6 @@ public class CrazyThursday implements YuniPlugin {
     /** 文案配置文件名（位于插件资源目录）。 */
     private static final String SENTENCE_FILE = "sentences.json";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("疯狂星期四")
-                .version("0.0.1")
-                .description("每周四随机发送疯四文案")
-                .author("Yuier me@yuier.com")
-                .tip("每周四在 10:00~13:00 与 15:00~18:00 两段时间内各随机投放两次")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

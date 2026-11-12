@@ -1,6 +1,5 @@
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import com.yuier.yuni.plugin.api.service.YuniHttp;
@@ -43,17 +42,6 @@ public class Setu implements YuniPlugin {
             .description("群友喜闻乐见的模块")
             .build();
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("涩涩")
-                .version("0.0.1")
-                .description("群友喜闻乐见的模块")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 `/色图` ，bot 会向群聊发送一张色图")
-                .tip("图片资源来自网络，如果群友觉得不够涩那也没办法了 (￣▽￣)")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

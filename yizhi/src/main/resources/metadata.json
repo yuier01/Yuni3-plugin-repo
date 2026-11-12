@@ -1,4 +1,15 @@
 {
-  "id": "yizhi",
-  "name": "要我一直吗"
+  "plugins": {
+    "YaoWoYiZhi": {
+      "description": "要我一直",
+      "tips": [
+        "向群聊发送 `/一直 {图片}` ，bot 会向群聊发送一张 “<大图> 要我一直<小图>吗” 的图片"
+      ],
+      "name": "要我一直 IMAGE 吗",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "要我一直吗",
+  "id": "yizhi"
 }

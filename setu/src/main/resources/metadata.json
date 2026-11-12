@@ -1,4 +1,16 @@
 {
-  "id": "setu",
-  "name": "色图模块"
+  "plugins": {
+    "Setu": {
+      "description": "群友喜闻乐见的模块",
+      "tips": [
+        "向群聊发送 `/色图` ，bot 会向群聊发送一张色图",
+        "图片资源来自网络，如果群友觉得不够涩那也没办法了 (￣▽￣)"
+      ],
+      "name": "涩涩",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "色图模块",
+  "id": "setu"
 }

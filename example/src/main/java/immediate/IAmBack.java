@@ -1,7 +1,6 @@
 package immediate;
 
 import com.yuier.yuni.core.bot.BotGroupInfo;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import lombok.Data;
@@ -45,16 +44,6 @@ public class IAmBack implements YuniPlugin {
     /** 播报内容。 */
     private static final String MESSAGE = "我是后背";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("即时插件示例")
-                .version("0.0.1")
-                .description("即时任务插件实例")
-                .author("Yuier me@yuier.com")
-                .tip("插件中定义的动作会且仅会在注册后立即执行一次，启动后会向特定群聊发送一条消息“我是后背”")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

@@ -182,7 +182,11 @@ public class PluginManageSupport {
                 plugin.getState().getDisplayName(),
                 plugin.getState().name().toLowerCase(),
                 plugin.getFailureSummary().orElse(null),
-                plugin.getMissingServices());
+                plugin.getMissingServices(),
+                plugin.getRequiredServices(),
+                plugin.getHomepage(),
+                plugin.getRepository(),
+                plugin.getIcon());
     }
 
     // ==================== 内容哈希 ====================

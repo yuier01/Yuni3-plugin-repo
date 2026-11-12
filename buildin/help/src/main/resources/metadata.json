@@ -1,4 +1,15 @@
 {
-  "id": "help",
-  "name": "帮助信息模块"
+  "plugins": {
+    "HelpInfo": {
+      "description": "输出帮助信息",
+      "tips": [
+        "向群聊发送 “/帮助” 可以查看帮助信息"
+      ],
+      "name": "帮助信息",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "帮助信息模块",
+  "id": "help"
 }

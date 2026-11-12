@@ -299,6 +299,10 @@
                 <div class="info-row" th:if="${!#lists.isEmpty(plugin.missingServices)}">
                     <div class="info-label">缺失依赖:</div>
                     <div class="info-value" th:text="${#strings.listJoin(plugin.missingServices, ', ')}"></div>
+                </div>                <!-- 声明的依赖服务始终展示 -->
+                <div class="info-row" th:if="${!#lists.isEmpty(plugin.requiredServices)}">
+                    <div class="info-label">依赖服务:</div>
+                    <div class="info-value" th:text="${#strings.listJoin(plugin.requiredServices, ', ')}"></div>
                 </div>
             </div>
         </div>

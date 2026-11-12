@@ -3,7 +3,6 @@ import com.yuier.yuni.core.event.YuniMessageEvent;
 import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.Reply;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
@@ -84,21 +83,6 @@ public class MCManage implements YuniPlugin {
     /** 无子命令、无参数时查询本群唯一服务器所需的「根节点」处理器。 */
     private static final String CMD_ROOT = 安慕希;
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("MC 服务管理")
-                .version("0.0.1")
-                .description("MC 服务器管理")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 `/mc` ，查询本群服务器状态")
-                .tip("向群聊发送 `/mc {服务器名称}` ，查询指定服务器状态")
-                .tip("向群聊发送 `/mc 添加 {服务器名称} {服务器地址}` ，添加服务器")
-                .tip("向群聊发送 `/mc 删除 {服务器名称}` ，删除服务器")
-                .tip("向群聊发送 `/mc 修改名称 {服务器名称} {服务器新名称}` ，修改服务器名称")
-                .tip("向群聊发送 `/mc 修改地址 {服务器名称} {服务器地址}` ，修改服务器地址")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

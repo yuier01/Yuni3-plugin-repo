@@ -2,7 +2,6 @@ import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.core.enums.CommandArgRequireType;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import util.TransMap;
@@ -49,17 +48,6 @@ public class HooTrans implements YuniPlugin {
     /** 映射表文件名（位于插件资源目录，与切噜语共用同一个文件）。 */
     private static final String TRANS_MAP_FILE = "trans-map.json";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("齁哦语转换")
-                .version("0.0.1")
-                .description("齁哦语转换")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 “/齁哦 转换 {文本}” 可以将文本转换为齁哦语")
-                .tip("向群聊发送 “/齁哦 还原 {齁哦语文本}” 可以将齁哦语还原为原始文本")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

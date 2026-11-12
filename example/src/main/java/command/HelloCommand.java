@@ -2,7 +2,6 @@ package command;
 
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 
@@ -37,16 +36,6 @@ public class HelloCommand implements YuniPlugin {
             .description("验证指令系统可用性")
             .build();
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("指令插件示例")
-                .version("0.0.1")
-                .description("验证指令系统可用性")
-                .author("Yuier me@yuier.com")
-                .tip("在群聊内发送“/测试”，bot 会响应 “Hello Command!”")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

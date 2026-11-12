@@ -1,6 +1,5 @@
 package pattern;
 
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 
@@ -41,16 +40,6 @@ public class HelloPattern implements YuniPlugin {
     /** 触发词。 */
     private static final String TRIGGER = "你好";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("规则插件示例")
-                .version("0.0.1")
-                .description("验证模式匹配可用性")
-                .author("Yuier me@yuier.com")
-                .tip("在群聊内发送带有“你好”的消息，bot 会响应 “你好，我是 {bot 昵称} !”")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

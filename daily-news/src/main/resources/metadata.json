@@ -1,4 +1,15 @@
 {
-  "id": "daily-news",
-  "name": "每日早报"
+  "plugins": {
+    "DailyNews": {
+      "description": "每天定时发送早报",
+      "tips": [
+        "每天 08:30 向已启用本插件的群发送当日早报图片"
+      ],
+      "name": "每日早报",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "每日早报",
+  "id": "daily-news"
 }

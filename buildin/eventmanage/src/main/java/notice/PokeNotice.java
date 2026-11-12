@@ -1,6 +1,5 @@
 package notice;
 
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 
@@ -66,16 +65,6 @@ public class PokeNotice implements YuniPlugin {
             "再戳我要生气了！"
     };
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("戳一戳事件处理")
-                .version("0.0.1")
-                .description("戳一戳事件处理")
-                .author("Yuier me@yuier.com")
-                .tip("戳一戳 bot ，bot 会回复")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

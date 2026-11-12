@@ -1,6 +1,5 @@
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.Reply;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
@@ -112,17 +111,6 @@ public class Fortune implements YuniPlugin {
      */
     private volatile String lastCacheDate;
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("今日运势")
-                .version("0.0.1")
-                .description("少女祈祷中……")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 `/运势` ，查看自己今天的运势")
-                .tip("一天内重复查看，运势不变")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

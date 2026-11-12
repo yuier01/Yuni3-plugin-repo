@@ -1,6 +1,5 @@
 import com.yuier.yuni.core.bot.BotGroupInfo;
 import com.yuier.yuni.core.util.CronExpressionBuilder;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.ScopeQuery;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
@@ -65,16 +64,6 @@ public class DailyNews implements YuniPlugin {
     /** 日期格式，与接口返回的 {@code datatime} 对齐。 */
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("每日早报")
-                .version("0.0.1")
-                .description("每天定时发送早报")
-                .author("Yuier me@yuier.com")
-                .tip("每天 08:30 向已启用本插件的群发送当日早报图片")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

@@ -1,4 +1,3 @@
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 
@@ -34,16 +33,6 @@ public class AntiGbf implements YuniPlugin {
     /** 警告文案。 */
     private static final String WARNING = "大家不要信，这是骑空士的陷阱！";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("骑空士陷阱粉碎机")
-                .version("0.0.1")
-                .description("警惕骑空士的陷阱")
-                .author("Yuier me@yuier.com")
-                .tip("检测到消息中含有 `granbluefantasy.jp` 文本，自动警告骑空士的陷阱")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

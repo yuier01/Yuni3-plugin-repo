@@ -1,4 +1,17 @@
 {
-  "id": "steam",
-  "name": "steam 相关功能"
+  "plugins": {
+    "Steam": {
+      "description": "监控群友的 steam 游戏状态，并提供绑定/解绑命令",
+      "tips": [
+        "群友绑定 steam id 后，其开始/停止/更换游戏时 bot 会在群内播报",
+        "向群聊发送 `/steam 绑定id {steam id}` 命令绑定 steam id",
+        "向群聊发送 `/steam 解绑id` 命令解绑 steam id"
+      ],
+      "name": "Steam 状态监控与绑定",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "steam 相关功能",
+  "id": "steam"
 }

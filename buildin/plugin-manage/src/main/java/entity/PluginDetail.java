@@ -49,8 +49,8 @@ public class PluginDetail {
     /** 在当前消息所在群是否生效。 */
     private Boolean enabled;
 
-    /** 所属模块显示名。 */
-    private String moduleName;
+    /** 所属 jar 标识。 */
+    private String artifactId;
 
     /** 运行状态的中文名，如「运行中」。 */
     private String stateName;
@@ -68,4 +68,16 @@ public class PluginDetail {
 
     /** 未满足的依赖服务类型名；仅状态为「等待依赖」时非空。 */
     private List<String> missingServices;
+
+    /** 依赖的服务类型名。 */
+    private List<String> requiredServices;
+
+    /** 项目主页。 */
+    private String homepage;
+
+    /** 代码仓库。 */
+    private String repository;
+
+    /** 图标。 */
+    private String icon;
 }

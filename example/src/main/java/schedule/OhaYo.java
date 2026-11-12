@@ -1,7 +1,6 @@
 package schedule;
 
 import com.yuier.yuni.core.util.CronExpressionBuilder;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 
@@ -41,16 +40,6 @@ public class OhaYo implements YuniPlugin {
     /** 问候语。 */
     private static final String GREETING = "偶哈哟，欧尼酱！";
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("定时插件示例")
-                .version("0.0.1")
-                .description("定时任务插件示例")
-                .author("Yuier me@yuier.com")
-                .tip("每天早上会向 bot master 问好。")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {

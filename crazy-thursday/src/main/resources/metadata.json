@@ -1,4 +1,15 @@
 {
-  "id": "crazy-thursday",
-  "name": "疯狂星期四"
+  "plugins": {
+    "CrazyThursday": {
+      "description": "每周四随机发送疯四文案",
+      "tips": [
+        "每周四在 10:00~13:00 与 15:00~18:00 两段时间内各随机投放两次"
+      ],
+      "name": "疯狂星期四",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "疯狂星期四",
+  "id": "crazy-thursday"
 }

@@ -1,4 +1,24 @@
 {
-  "id": "event-manage",
-  "name": "通用事件处理模块"
+  "plugins": {
+    "HeartBeatEvent": {
+      "description": "OneBot 心跳事件处理",
+      "tips": [
+        "接收心跳事件，打印连接状态与心跳间隔"
+      ],
+      "name": "OneBot 心跳事件处理",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    },
+    "PokeNotice": {
+      "description": "戳一戳事件处理",
+      "tips": [
+        "戳一戳 bot ，bot 会回复"
+      ],
+      "name": "戳一戳事件处理",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "通用事件处理模块",
+  "id": "event-manage"
 }

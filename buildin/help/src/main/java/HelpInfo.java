@@ -1,6 +1,6 @@
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
+import com.yuier.yuni.plugin.api.PluginDeclaration;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 
@@ -38,16 +38,11 @@ public class HelpInfo implements YuniPlugin {
             .description("输出帮助信息")
             .build();
 
+
     @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("帮助信息")
-                .version("0.0.1")
-                .description("输出帮助信息")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 “/帮助” 可以查看帮助信息")
-                .defaultEnable(true)
-                .buildIn(true)
-                .build();
+    public PluginDeclaration getDeclaration() {
+        // 内置插件：只有 bot 拥有者能启停
+        return PluginDeclaration.of("HelpInfo").buildIn(true).build();
     }
 
     @Override

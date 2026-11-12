@@ -4,7 +4,6 @@ import com.yuier.yuni.core.enums.CommandArgRequireType;
 import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
-import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -82,16 +81,6 @@ public class YaoWoYiZhi implements YuniPlugin {
             .arg(ArgDef.required(ARG_TARGET_IMAGE, "要我一直", CommandArgRequireType.IMAGE))
             .build();
 
-    @Override
-    public PluginMetadata getMetadata() {
-        return PluginMetadata.of("要我一直 IMAGE 吗")
-                .version("0.0.1")
-                .description("一直.image")
-                .author("Yuier me@yuier.com")
-                .tip("向群聊发送 `/一直 {图片}` ，bot 会向群聊发送一张 “<大图> 要我一直<小图>吗” 的图片")
-                .defaultEnable(true)
-                .build();
-    }
 
     @Override
     public void apply(YuniContext ctx) {
