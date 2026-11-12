@@ -19,7 +19,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
  *           调度声明与任务体在同一个表达式</td></tr>
  *   <tr><td>{@code getAction()} 返回 {@code Action}</td>
  *       <td>直接传 lambda，不需要 {@code Action} 这层包装</td></tr>
- *   <tr><td>{@code PluginUtils.getBotMasterId()}</td><td>{@code ctx.service(Bot.class).getMasterId()}</td></tr>
+ *   <tr><td>{@code PluginUtils.getBotMasterId()}</td><td>{@code ctx.requireService(Bot.class).getMasterId()}</td></tr>
  *   <tr><td>{@code SpringContextUtil.getBean(YuniBot.class)}</td><td>{@code ctx.getSender()} 或 {@code ctx.getBot()}</td></tr>
  *   <tr><td>{@code enable()} / {@code disable()} 空实现</td>
  *       <td><b>方法消失</b>——启停由 {@code ScopeFilter} 表达，不涉及插件代码</td></tr>
@@ -58,7 +58,7 @@ public class OhaYo implements YuniPlugin {
         ctx.schedule(
                 CronExpressionBuilder.create().dailyAt(10, 0).build(),
                 () -> ctx.getSender()
-                        .privateChat(ctx.service(com.yuier.yuni.core.model.bot.Bot.class).getMasterId())
+                        .privateChat(ctx.requireService(com.yuier.yuni.core.model.bot.Bot.class).getMasterId())
                         .text(GREETING)
                         .send());
     }

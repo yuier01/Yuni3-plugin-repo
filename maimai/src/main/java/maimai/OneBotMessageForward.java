@@ -26,7 +26,7 @@ import java.util.List;
  *       <td>{@code ctx.onMessage(ev -> true, ...)}——「无条件」写成显式的谓词</td></tr>
  *   <tr><td>{@code PluginUtils.getBean("maiMaiWsServer")} 按字符串名取 Spring Bean，
  *       取不到时 {@code instanceof} 判断失败并<b>静默什么都不做</b></td>
- *       <td>{@code inject()} 声明依赖 {@link MaiMaiApi}，由框架在依赖就绪后才加载；
+ *       <td>{@code requiredServices()} 声明依赖 {@link MaiMaiApi}，由框架在依赖就绪后才加载；
  *       服务缺失时插件停在 PENDING 并在启动结束时报错</td></tr>
  *   <tr><td>{@code event.getRawJson()}（core 事件对象）</td>
  *       <td>{@code ev.getRawJson()}（插件侧事件视图的逃生舱，语义相同）</td></tr>
@@ -73,13 +73,13 @@ public class OneBotMessageForward implements YuniPlugin {
      * @return 依赖的服务类型
      */
     @Override
-    public List<Class<?>> inject() {
+    public List<Class<?>> requiredServices() {
         return List.of(MaiMaiApi.class);
     }
 
     @Override
     public void apply(YuniContext ctx) {
-        MaiMaiApi api = ctx.service(MaiMaiApi.class);
+        MaiMaiApi api = ctx.requireService(MaiMaiApi.class);
 
         // 「无条件」显式写出：取代旧实现里那个覆写 match() 恒返回 true 的匿名子类
         ctx.onMessage(ev -> true, (ev, reply) -> {

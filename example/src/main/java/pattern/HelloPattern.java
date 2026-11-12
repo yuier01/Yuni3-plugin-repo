@@ -21,7 +21,7 @@ import com.yuier.yuni.plugin.api.YuniPlugin;
  *   <tr><td>{@code execute(YuniMessageEvent)} 是另一个方法<br>
  *       ——<b>执行入口在几十行之外</b></td></tr>
  *   <tr><td>{@code PluginUtils.getBotNickName()}</td>
- *       <td>{@code ctx.service(Bot.class).getNickName()}</td></tr>
+ *       <td>{@code ctx.requireService(Bot.class).getNickName()}</td></tr>
  * </table>
  *
  * <p>旧实现读代码时必须在 {@code getDetector()} 与 {@code execute()} 之间来回跳，
@@ -55,7 +55,7 @@ public class HelloPattern implements YuniPlugin {
     @Override
     public void apply(YuniContext ctx) {
         // bot 昵称随插件生命周期不变，因此在 apply 时取一次即可
-        String botName = ctx.service(com.yuier.yuni.core.model.bot.Bot.class).getNickName();
+        String botName = ctx.requireService(com.yuier.yuni.core.model.bot.Bot.class).getNickName();
 
         ctx.onMessage(
                 // 探测条件：群聊 且 消息含触发词

@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  *       <td>在 {@code apply(ctx)} 里直接启动——「即时插件」这一类型消失</td></tr>
  *   <tr><td>用 {@code DefaultSingletonBeanRegistry} 把 WS 服务器塞进 Spring 容器，
  *       名字 {@code "maiMaiWsServer"}</td>
- *       <td>{@code ctx.provide(MaiMaiApi.class, server)}——插件服务命名空间，按类型解析</td></tr>
+ *       <td>{@code ctx.registerService(MaiMaiApi.class, server)}——插件服务命名空间，按类型解析</td></tr>
  *   <tr><td>{@code destroy()} 里手动 {@code destroySingleton} + {@code shutdown()}</td>
  *       <td>{@code ctx.effect(() -> server::shutdown)}——卸载时框架逆序执行</td></tr>
  *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(..., getClass())}</td>
@@ -68,7 +68,7 @@ public class MaiMaiAdapterBooter implements YuniPlugin {
         int port = config.getPort();
         log.info("[MaiMai] 启动服务器，端口: {}", port);
 
-        MaiMaiWsServer server = new MaiMaiWsServer(port, ctx.getBot(), ctx.service(JsonCodec.class));
+        MaiMaiWsServer server = new MaiMaiWsServer(port, ctx.getBot(), ctx.requireService(JsonCodec.class));
         server.setHeartbeatIntervalMs(config.getHeartbeatIntervalMs());
 
         // 声明框架不认识的资源：WS 服务器 + 心跳线程池。
@@ -76,8 +76,8 @@ public class MaiMaiAdapterBooter implements YuniPlugin {
         ctx.effect(() -> server::shutdown);
 
         // 注册为插件服务：取代旧实现往 Spring 容器里塞 Bean 的做法。
-        // 消费方 OneBotMessageForward 通过 inject() 声明依赖，卸载时自动注销
-        ctx.provide(MaiMaiApi.class, server);
+        // 消费方 OneBotMessageForward 通过 requiredServices() 声明依赖，卸载时自动注销
+        ctx.registerService(MaiMaiApi.class, server);
 
         server.start();
     }
