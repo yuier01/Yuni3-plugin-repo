@@ -522,7 +522,7 @@ public class PluginManage implements YuniPlugin {
      * @return jar 标识；找不到时返回 {@code null}
      */
     private String selfArtifactId(PluginAdmin admin) {
-        String selfId = getDeclaration().getId();
+        String selfId = getDeclaration().getKey();
         String suffix = "/" + selfId;
         for (PluginView plugin : admin.getPlugins()) {
             if (plugin.getId().equals(selfId) || plugin.getId().endsWith(suffix)) {
