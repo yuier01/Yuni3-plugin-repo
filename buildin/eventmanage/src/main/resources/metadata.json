@@ -1,4 +1,4 @@
 {
-  "module_id": "event-manage",
-  "module_name": "通用事件处理模块"
+  "id": "event-manage",
+  "name": "通用事件处理模块"
 }

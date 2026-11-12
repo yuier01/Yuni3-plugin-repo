@@ -1,4 +1,4 @@
 {
-  "module_id": "pig-today",
-  "module_name": "今日猪猪"
+  "id": "pig-today",
+  "name": "今日猪猪"
 }

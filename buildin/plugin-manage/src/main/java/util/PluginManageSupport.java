@@ -6,7 +6,6 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.yuier.yuni.plugin.api.PluginAdmin;
-import com.yuier.yuni.plugin.api.PluginModuleView;
 import com.yuier.yuni.plugin.api.PluginView;
 import com.yuier.yuni.plugin.api.YuniContext;
 import entity.PluginDetail;
@@ -19,7 +18,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.thymeleaf.TemplateEngine;
@@ -116,7 +117,7 @@ public class PluginManageSupport {
     /**
      * 组装插件列表数据。
      *
-     * <p>按模块分组：单插件模块渲染成一行，多插件模块渲染成一个带标题的卡片。
+     * <p>按 jar 分组：单插件 jar 渲染成一行，多插件 jar 渲染成一个带标题的卡片。
      * 与旧 {@code PluginShow.assemblerPluginListData} 的结构一致，区别是数据源
      * 从 {@code PluginContainer} 换成了 {@link PluginAdmin}。</p>
      *
@@ -125,18 +126,18 @@ public class PluginManageSupport {
      */
     public List<PluginListElement> assemblePluginList(long groupId) {
         List<PluginListElement> elements = new ArrayList<>();
-        for (PluginModuleView module : admin.getModules()) {
-            List<PluginView> plugins = module.getPlugins();
-            if (plugins.isEmpty()) {
-                // 模块下没有任何插件（例如 jar 里没有 YuniPlugin 实现）：
-                // 不展示，否则用户会看到一个永远打不开的空卡片
-                continue;
-            }
+        Map<String, List<PluginView>> byArtifact = admin.getPlugins().stream()
+                .collect(Collectors.groupingBy(
+                        plugin -> plugin.getArtifactId().isBlank() ? "" : plugin.getArtifactId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+        for (Map.Entry<String, List<PluginView>> entry : byArtifact.entrySet()) {
+            List<PluginView> plugins = entry.getValue();
             if (plugins.size() == 1) {
                 elements.add(new PluginListElement(toListElement(plugins.get(0), groupId)));
             } else {
                 PluginListModule listModule = new PluginListModule();
-                listModule.setModuleName(module.getName());
+                listModule.setModuleName(entry.getKey().isBlank() ? "未分组" : entry.getKey());
                 for (PluginView plugin : plugins) {
                     listModule.addSubPlugin(toListElement(plugin, groupId));
                 }
@@ -177,7 +178,7 @@ public class PluginManageSupport {
                 plugin.getAuthor(),
                 plugin.getVersion(),
                 admin.isEnabledIn(plugin.getId(), groupId),
-                plugin.getModuleId(),
+                plugin.getArtifactId(),
                 plugin.getState().getDisplayName(),
                 plugin.getState().name().toLowerCase(),
                 plugin.getFailureSummary().orElse(null),
@@ -200,22 +201,17 @@ public class PluginManageSupport {
      * @return 哈希值
      */
     public int hashCodeOfList(long groupId) {
-        List<Integer> moduleHashes = new ArrayList<>();
-        for (PluginModuleView module : admin.getModules()) {
-            List<Integer> pluginHashes = new ArrayList<>();
-            for (PluginView plugin : module.getPlugins()) {
-                pluginHashes.add(Objects.hash(
-                        plugin.getName(),
-                        plugin.getDescription(),
-                        plugin.getState(),
-                        admin.isEnabledIn(plugin.getId(), groupId)));
-            }
-            // 排序消除顺序影响：模块内插件的顺序变化不应导致重新渲染
-            pluginHashes.sort(Integer::compareTo);
-            moduleHashes.add(pluginHashes.hashCode());
+        List<Integer> pluginHashes = new ArrayList<>();
+        for (PluginView plugin : admin.getPlugins()) {
+            pluginHashes.add(Objects.hash(
+                    plugin.getName(),
+                    plugin.getDescription(),
+                    plugin.getState(),
+                    admin.isEnabledIn(plugin.getId(), groupId)));
         }
-        moduleHashes.sort(Integer::compareTo);
-        return moduleHashes.hashCode();
+        // 排序消除顺序影响：加载顺序变化不应导致重新渲染
+        pluginHashes.sort(Integer::compareTo);
+        return pluginHashes.hashCode();
     }
 
     /**
@@ -232,7 +228,7 @@ public class PluginManageSupport {
                 plugin.getTips(),
                 plugin.getAuthor(),
                 plugin.getVersion(),
-                plugin.getModuleId(),
+                plugin.getArtifactId(),
                 plugin.getState(),
                 plugin.getFailureSummary().orElse(null),
                 plugin.getMissingServices(),

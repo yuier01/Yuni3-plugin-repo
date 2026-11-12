@@ -287,8 +287,8 @@
                     <div class="info-value" th:text="${plugin.author}"></div>
                 </div>
                 <div class="info-row">
-                    <div class="info-label">所属模块:</div>
-                    <div class="info-value" th:text="${plugin.moduleName}"></div>
+                    <div class="info-label">所属 jar:</div>
+                    <div class="info-value" th:text="${plugin.artifactId}"></div>
                 </div>
                 <!-- 失败原因仅在状态为「加载失败」时有值；th:if 让正常插件不出现空行 -->
                 <div class="info-row" th:if="${plugin.failureSummary != null}">

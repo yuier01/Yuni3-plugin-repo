@@ -1,4 +1,4 @@
 {
-  "module_id": "example",
-  "module_name": "示例模块"
+  "id": "example",
+  "name": "示例模块"
 }

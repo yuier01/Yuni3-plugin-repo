@@ -1,6 +1,9 @@
 package steamstatus;
 
 import com.yuier.yuni.core.util.CronExpressionBuilder;
+import com.yuier.yuni.event.detector.message.command.model.ArgDef;
+import com.yuier.yuni.event.detector.message.command.model.CommandNode;
+import com.yuier.yuni.plugin.api.Commands;
 import com.yuier.yuni.plugin.api.PluginMetadata;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
@@ -11,74 +14,47 @@ import steamstatus.utils.SteamStatusService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
- * 群友 steam 游戏状态监控。
+ * Steam 相关功能——状态监控与 id 绑定/解绑。
  *
- * <h2>迁移说明（P5）：本类是 {@code ScopeQuery} 的验证样板</h2>
- * <p>它取代设计文档 §8.7 里唯一一个「主动插件需要按群粒度启停」的场景。
- * 旧实现是这样判定的：</p>
- * <pre>{@code
- * // MemberSteamStatus.java:113-115 旧
- * PluginEnableProcessor processor = PluginUtils.getBean(PluginEnableProcessor.class);
- * if (processor.isPluginEnabled(groupId, this.getClass())) { ... }
- * }</pre>
- * <p>三个问题：依赖框架内部类、需要把自己的 {@code Class} 当身份传进去、
- * 且必须从 Spring 容器取 Bean。新实现改为 {@code ctx.getScope().isEnabledIn(groupId)}
- * ——稳定契约，无需暴露身份（见 {@link SteamStatusService#enabledGroupsOfUser}）。</p>
+ * <h2>为什么是一个插件类</h2>
+ * <p>旧实现拆成 {@code MemberSteamStatus} 与 {@code UserRegisterSteamId} 两个插件，
+ * 但两者共享同一个 {@link SteamStatusService}、同一张绑定表、同一份状态缓存，
+ * 并且「绑定」是「监控」的前置条件。在新系统里一个 {@code apply} 可以同时注册
+ * 定时任务与命令树，因此合并为一个入口，避免两个插件各自初始化一遍数据库与缓存。</p>
  *
- * <table border="1">
- *   <caption>其余差异</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code extends ScheduledPlugin} + {@code cronExpression()} + {@code getAction()}</td>
- *       <td>{@code ctx.schedule(cron, task)}——任务随插件卸载自动取消</td></tr>
- *   <tr><td>{@code PluginUtils.simpleGet(url, ...)}（手工拼 baseUrl 三段字符串）</td>
- *       <td>{@code ctx.getHttp().get(...).query(...)}，见
- *           {@link SteamStatusService#queryPlayers(List)}</td></tr>
- *   <tr><td>{@code PluginUtils.findUserGroups(userId)} 取用户所在全部群</td>
- *       <td>仍取群列表，但只保留「用户确实在群里且启用了本插件」的群</td></tr>
- *   <tr><td>{@code EventLogUtil.getGroupMemberName(gid, uid)}</td>
- *       <td>{@code ctx.getBot().getGroupMemberInfo(...)}，见
- *           {@link SteamStatusService#memberDisplayName(long, long)}</td></tr>
- * </table>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>分页步长写错导致漏查</b>：旧 {@code getAction()} 与
- *       {@code SteamStatusUtil.initPlayerStatus()} 都是
- *       {@code for (int i = 0; i <= idDataCount / 100; i += 20)}——
- *       循环变量 {@code i} 既当页码又当 {@code findByPage} 的 offset 用，
- *       而步长 20 与页大小 100 不一致。绑定数超过 100 时，
- *       {@code i = 0, 20, 40 ...} 取到的是第 0/20/40 页，
- *       <b>第 1~19 页的群友永远不会被监控</b>。新实现按
- *       {@code 0, 1, 2, ...} 遍历页码。</li>
- *   <li><b>「取用户所在群」包含了用户并不在的群</b>：旧实现只按
- *       {@code findUserGroups} 的返回群播报，而该方法反映的是「bot 在哪些群里」，
- *       并未校验目标用户是否属于该群。新实现用
- *       {@code getGroupMemberInfo} 确认成员身份。</li>
- *   <li><b>嵌套的 {@code CompletableFuture.runAsync} 没有意义</b>：旧实现
- *       在 {@code for} 循环里对每一页提交一个异步任务——但循环本身已经跑在
- *       调度线程上，异步只是把工作丢到公共池，失败也不会被记录。
- *       现在串行执行，异常由 {@code ctx.schedule} 的调度器捕获并记录。</li>
- *   <li><b>接口异常会中断整轮监控</b>：旧 {@code PluginUtils.simpleGet} 失败抛
- *       {@code RuntimeException}，异常穿透 {@code forEach}，导致后续群友全部不处理。
- *       新实现由 {@link SteamStatusService#queryPlayers(List)} 统一降级为空列表。</li>
- * </ol>
+ * <h2>群粒度启停</h2>
+ * <p>监控只向 {@link SteamStatusService#enabledGroupsOfUser(long)} 返回的群播报——
+ * 这些群同时满足「用户在该群」「bot 在该群」「本插件在该群生效」。</p>
  */
 @Slf4j
-public class MemberSteamStatus implements YuniPlugin {
+public class Steam implements YuniPlugin {
 
     /** 轮询周期：每分钟一次。 */
     private static final String CRON_EVERY_MINUTE = CronExpressionBuilder.create().everyMinutes(1).build();
 
+    /** 命令名。 */
+    private static final String CMD_STEAM = "steam";
+
+    /** 子命令：绑定。 */
+    private static final String CHILD_BIND = "绑定id";
+
+    /** 子命令：解绑。 */
+    private static final String CHILD_UNBIND = "解绑id";
+
+    /** 参数名：steam id。 */
+    private static final String ARG_STEAM_ID = "ID参数";
+
     @Override
     public PluginMetadata getMetadata() {
-        return PluginMetadata.of("群友 steam 游戏状态监控")
+        return PluginMetadata.of("Steam 状态监控与绑定")
                 .version("0.0.1")
-                .description("监控群友的 steam 游戏状态")
+                .description("监控群友的 steam 游戏状态，并提供绑定/解绑命令")
                 .author("Yuier me@yuier.com")
                 .tip("群友绑定 steam id 后，其开始/停止/更换游戏时 bot 会在群内播报")
+                .tip("向群聊发送 `/steam 绑定id {steam id}` 命令绑定 steam id")
+                .tip("向群聊发送 `/steam 解绑id` 命令解绑 steam id")
                 .defaultEnable(true)
                 .build();
     }
@@ -90,9 +66,12 @@ public class MemberSteamStatus implements YuniPlugin {
         // 把数据库里的绑定关系灌进缓存，作为差分的初始状态
         steam.syncDbToCache();
 
-        // 取代 ScheduledPlugin：任务随插件卸载自动取消，不需要手动 cancel
+        // 任务随插件卸载自动取消，不需要手动 cancel
         ctx.schedule(CRON_EVERY_MINUTE, () -> poll(steam));
+        ctx.command(buildTree(steam));
     }
+
+    // ==================== 状态监控 ====================
 
     /**
      * 执行一轮监控。
@@ -130,10 +109,6 @@ public class MemberSteamStatus implements YuniPlugin {
 
     /**
      * 对比前后两次状态并播报变化。
-     *
-     * <p>旧方法名与参数名都用中文（{@code checkAndReportStatusChange}、
-     * {@code 之前的状态}、{@code 新的状态}）。args 名保留中文以维持可读性，
-     * 但方法名改为英文，与代码库其余部分一致。</p>
      *
      * @param steam    Steam 状态服务
      * @param previous 上一轮的状态；首次见到该玩家时为 {@code null}
@@ -223,5 +198,86 @@ public class MemberSteamStatus implements YuniPlugin {
             steam.broadcast(groupId, "群友 " + steam.memberDisplayName(groupId, userId)
                     + "(Steam id: " + current.getPersonaname() + ") 正在游玩: " + current.getGameChineseName());
         }
+    }
+
+    // ==================== 绑定 / 解绑命令 ====================
+
+    /**
+     * 构造命令树。
+     *
+     * <p>命令树在 {@code apply} 内构造而不是作为 {@code static} 常量，
+     * 因为节点处理器需要捕获持有 {@code ctx} 的 {@link SteamStatusService}。
+     * 命令树的<b>结构</b>没有变化，只是构造时机从类加载挪到了装配期。</p>
+     *
+     * @param steam Steam 状态服务
+     * @return 命令树根节点
+     */
+    private CommandNode buildTree(SteamStatusService steam) {
+        return CommandNode.builder(CMD_STEAM)
+                .description("Steam ID 绑定/解绑")
+                .child(bindNode(steam))
+                .child(unbindNode(steam))
+                .build();
+    }
+
+    /**
+     * 构造「绑定」子命令节点。
+     *
+     * @param steam Steam 状态服务
+     * @return 子节点
+     */
+    private CommandNode bindNode(SteamStatusService steam) {
+        return Commands.on(CommandNode.builder(CHILD_BIND)
+                .description("绑定 steam id")
+                .arg(ArgDef.required(ARG_STEAM_ID, "steam id"))
+                .build(), (event, reply) -> {
+            long userId = event.getUserId();
+            String steamId = event.getCommandResult().getArg(ARG_STEAM_ID).asText().trim();
+
+            List<UserSteamId> existing = steam.findBindingsByUserId(userId);
+            if (!existing.isEmpty()) {
+                reply.quote().text("你已绑定如下 steam id: " + existing.getFirst().getSteamId()
+                        + "; 若要绑定新 id, 请使用 `/steam 解绑id` 命令解除绑定当前 ID").send();
+                return;
+            }
+            if (steamId.isEmpty()) {
+                // 旧实现直接把它写进数据库，之后每一轮监控都会拿一个空 id 去请求接口
+                reply.quote().text("steam id 不能为空。").send();
+                return;
+            }
+
+            steam.insertBinding(userId, steamId);
+            steam.putIdMapping(steamId, userId);
+            // 立即建立状态基准，避免下一轮监控把「首次见到」误判为状态变化
+            SinglePlayerSummary baseline = steam.queryPlayer(steamId);
+            steam.fillGameChineseName(baseline);
+            steam.putCachedStatus(baseline);
+            reply.quote().text("你已绑定 steam id: " + steamId).send();
+        });
+    }
+
+    /**
+     * 构造「解绑」子命令节点。
+     *
+     * @param steam Steam 状态服务
+     * @return 子节点
+     */
+    private CommandNode unbindNode(SteamStatusService steam) {
+        return Commands.on(CommandNode.builder(CHILD_UNBIND)
+                .description("解绑 steam id")
+                .build(), (event, reply) -> {
+            long userId = event.getUserId();
+            List<UserSteamId> existing = steam.findBindingsByUserId(userId);
+            if (existing.isEmpty()) {
+                reply.quote().text("你未绑定任何 steam id.").send();
+                return;
+            }
+            String steamId = existing.getFirst().getSteamId();
+            steam.deleteBinding(userId);
+            steam.removeIdMapping(steamId);
+            // 一并清理状态快照：旧实现漏了这一步，导致重新绑定后会误播报状态变化
+            steam.removeCachedStatus(steamId);
+            reply.quote().text("你已解除绑定 steam id: " + steamId).send();
+        });
     }
 }

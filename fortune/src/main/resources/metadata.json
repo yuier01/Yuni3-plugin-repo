@@ -1,4 +1,4 @@
 {
-  "module_id": "fortune",
-  "module_name": "今日运势"
+  "id": "fortune",
+  "name": "今日运势"
 }

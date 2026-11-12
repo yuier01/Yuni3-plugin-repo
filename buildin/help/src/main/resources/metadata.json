@@ -1,4 +1,4 @@
 {
-  "module_id": "help",
-  "module_name": "帮助信息模块"
+  "id": "help",
+  "name": "帮助信息模块"
 }

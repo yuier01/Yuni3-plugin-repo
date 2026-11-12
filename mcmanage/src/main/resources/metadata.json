@@ -1,4 +1,4 @@
 {
-  "module_id": "mcmanage",
-  "module_name": "MC 管理"
+  "id": "mcmanage",
+  "name": "MC 管理"
 }

@@ -1,4 +1,4 @@
 {
-  "module_id": "plugin-manage",
-  "module_name": "插件管理模块"
+  "id": "plugin-manage",
+  "name": "插件管理模块"
 }

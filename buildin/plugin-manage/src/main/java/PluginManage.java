@@ -6,7 +6,6 @@ import com.yuier.yuni.plugin.api.Commands;
 import com.yuier.yuni.plugin.api.PluginAdmin;
 import com.yuier.yuni.plugin.api.PluginAdminException;
 import com.yuier.yuni.plugin.api.PluginMetadata;
-import com.yuier.yuni.plugin.api.PluginModuleView;
 import com.yuier.yuni.plugin.api.PluginView;
 import com.yuier.yuni.plugin.api.Reply;
 import com.yuier.yuni.plugin.api.YuniContext;
@@ -18,6 +17,7 @@ import util.PluginManagerConstants;
 import util.PluginManageSupport;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,8 +77,8 @@ import com.yuier.yuni.core.event.YuniMessageEvent;
  *       （都是「这个群是否投递事件」），因此这句话连同它背后的类型分支一起消失。</li>
  *   <li><b>重载前手动找 jar 的三重分支收进框架</b>：旧 {@code PluginReload}
  *       要遍历插件目录、按「文件名等于记录的 jar 名或以模块 ID 开头」筛选，
- *       然后分别处理「没找到」与「找到多个」。现在框架知道每个模块的 jar 文件名，
- *       插件只传模块 ID。</li>
+ *       然后分别处理「没找到」与「找到多个」。现在框架知道每个插件的 jar 文件名，
+ *       插件只传插件标识。</li>
  *   <li><b>同一插件的失败重载不再留下半状态</b>：旧实现先建新实例再改容器索引，
  *       中途失败会留下「新实例已建、索引未换」的状态。新框架的 reload 是
  *       「先彻底卸载、再重新加载」，任一步失败都有明确的中间态描述。</li>
@@ -124,8 +124,8 @@ public class PluginManage implements YuniPlugin {
                 .tip("`/插件 查看 {插件标识}` 查看指定插件详情")
                 .tip("`/插件 开启 {插件标识}` 在当前群开启指定插件")
                 .tip("`/插件 关闭 {插件标识}` 在当前群关闭指定插件")
-                .tip("`/插件 重载` 重载全部插件模块")
-                .tip("`/插件 重载 {插件标识}` 重载该插件所在的模块")
+                .tip("`/插件 重载` 重载全部 jar")
+                .tip("`/插件 重载 {插件标识}` 重载该插件所在的 jar")
                 .defaultEnable(true)
                 .buildIn(true)
                 .build();
@@ -221,14 +221,14 @@ public class PluginManage implements YuniPlugin {
     /**
      * 构造「重载」子命令节点。
      *
-     * <p>权限要求 {@code ADMIN}，与旧实现一致——重载会短暂中断该模块的服务。</p>
+     * <p>权限要求 {@code ADMIN}，与旧实现一致——重载会短暂中断该 jar 的服务。</p>
      *
      * @param ctx 插件上下文
      * @return 子节点
      */
     private CommandNode reloadNode(YuniContext ctx) {
         return Commands.on(CommandNode.builder(CHILD_RELOAD)
-                .description("重载插件模块")
+                .description("重载插件 jar")
                 // 节点级权限由框架递归校验，插件不需要自己判
                 .permission(UserPermission.ADMIN)
                 .arg(ArgDef.optional(ARG_RELOAD_TARGET, "插件标识（留空则重载全部）"))
@@ -372,38 +372,37 @@ public class PluginManage implements YuniPlugin {
     }
 
     /**
-     * 重载单个插件所在的模块。
+     * 重载单个插件所属的 jar。
      *
      * @param ctx    插件上下文
      * @param reply  回复入口
      * @param plugin 目标插件
      */
     private void reloadOne(YuniContext ctx, Reply reply, PluginView plugin) {
-        String moduleId = plugin.getModuleId();
-        if (moduleId == null || moduleId.isBlank()) {
-            reply.quote().text("插件「" + plugin.getName() + "」不属于任何模块，无法重载。\n"
+        String artifactId = plugin.getArtifactId();
+        if (artifactId == null || artifactId.isBlank()) {
+            reply.quote().text("插件「" + plugin.getName() + "」不属于任何 jar，无法重载。\n"
                     + "（它可能是通过代码直接加载的）").send();
             return;
         }
         try {
-            ctx.getPlugins().reload(moduleId);
+            ctx.getPlugins().reload(plugin.getId());
         } catch (PluginAdminException e) {
             reply.quote().text("重载失败：" + e.getMessage()).send();
             return;
         }
-        reply.quote().text("已重载模块「" + moduleId + "」（插件「" + plugin.getName() + "」所在模块）。").send();
+        reply.quote().text("已重载 jar「" + artifactId + "」（插件「" + plugin.getName() + "」所在 jar）。").send();
     }
-
     /**
-     * 重载全部模块。
+     * 重载全部 jar。
      *
-     * <p><b>注意</b>：本插件自己也在这批模块里。框架的
+     * <p><b>注意</b>：本插件自己也在这批 jar 里。框架的
      * {@code PluginRuntime.reload} 是同步的（卸载 → 换 ClassLoader → 重新加载），
      * 因此在它执行期间本插件正在运行的这段代码所属的类会被换掉。</p>
      *
-     * <p>之所以还能工作：本方法在重载「自己所在模块」<b>之前</b>已经把结果写进了
+     * <p>之所以还能工作：本方法在重载「自己所在 jar」<b>之前</b>已经把结果写进了
      * 局部变量，而 {@code reply} 的实现类（{@code CoreReply}）由父加载器加载，
-     * 不受子加载器关闭影响。为避免这种微妙依赖，本方法把本插件所在模块
+     * 不受子加载器关闭影响。为避免这种微妙依赖，本方法把本插件所在 jar
      * 放到<b>最后</b>重载。</p>
      *
      * @param ctx   插件上下文
@@ -411,61 +410,66 @@ public class PluginManage implements YuniPlugin {
      */
     private void reloadAll(YuniContext ctx, Reply reply) {
         PluginAdmin admin = ctx.getPlugins();
-        List<PluginModuleView> modules = admin.getModules();
-        if (modules.isEmpty()) {
-            reply.quote().text("当前没有任何已加载的插件模块。").send();
+        List<PluginView> plugins = admin.getPlugins();
+        if (plugins.isEmpty()) {
+            reply.quote().text("当前没有任何已加载的插件。").send();
             return;
         }
 
-        // 本插件所在的模块 ID：从自己的元数据反查（用名称匹配）
-        String selfModule = selfModuleId(admin);
+        // 按 jar 去重：一个 jar 只需重载一次（重载会重启 jar 内全部插件）
+        Map<String, String> artifactToPlugin = new LinkedHashMap<>();
+        for (PluginView plugin : plugins) {
+            artifactToPlugin.putIfAbsent(plugin.getArtifactId(), plugin.getId());
+        }
+
+        // 本插件所在的 jar：从自己的元数据反查（用名称匹配）
+        String selfArtifact = selfArtifactId(admin);
 
         List<String> failed = new ArrayList<>();
         int reloaded = 0;
-        // 先把其他模块重载完，最后处理自己所在模块
-        for (PluginModuleView module : modules) {
-            if (module.getId().equals(selfModule)) {
+        // 先把其他 jar 重载完，最后处理自己所在的 jar
+        for (Map.Entry<String, String> entry : artifactToPlugin.entrySet()) {
+            if (entry.getKey().equals(selfArtifact)) {
                 continue;
             }
-            if (tryReload(admin, module.getId(), failed)) {
+            if (tryReload(admin, entry.getValue(), failed)) {
                 reloaded++;
             }
         }
-        if (selfModule != null) {
-            if (tryReload(admin, selfModule, failed)) {
+        if (selfArtifact != null) {
+            String selfPluginId = artifactToPlugin.get(selfArtifact);
+            if (selfPluginId != null && tryReload(admin, selfPluginId, failed)) {
                 reloaded++;
             }
         }
 
-        StringBuilder message = new StringBuilder("已重载 " + reloaded + " 个插件模块。");
+        StringBuilder message = new StringBuilder("已重载 " + reloaded + " 个 jar。");
         if (!failed.isEmpty()) {
-            message.append("\n以下模块重载失败：");
+            message.append("\n以下 jar 重载失败：");
             for (String item : failed) {
                 message.append("\n- ").append(item);
             }
         }
         reply.quote().text(message.toString()).send();
     }
-
     /**
-     * 尝试重载一个模块，把失败记录下来而不是中断整轮。
+     * 尝试重载一个 jar，把失败记录下来而不是中断整轮。
      *
      * @param admin    插件管理服务
-     * @param moduleId 模块 ID
+     * @param pluginId 该 jar 内的任一插件标识
      * @param failed   失败信息收集器
      * @return 成功返回 {@code true}
      */
-    private boolean tryReload(PluginAdmin admin, String moduleId, List<String> failed) {
+    private boolean tryReload(PluginAdmin admin, String pluginId, List<String> failed) {
         try {
-            admin.reload(moduleId);
+            admin.reload(pluginId);
             return true;
         } catch (PluginAdminException e) {
-            log.warn("重载模块 {} 失败: {}", moduleId, e.getMessage());
-            failed.add(moduleId + "：" + e.getMessage());
+            log.warn("重载插件 {} 所在 jar 失败: {}", pluginId, e.getMessage());
+            failed.add(pluginId + "：" + e.getMessage());
             return false;
         }
     }
-
     // ==================== 辅助 ====================
 
     /**
@@ -522,17 +526,15 @@ public class PluginManage implements YuniPlugin {
     }
 
     /**
-     * 反查本插件所在的模块 ID。
+     * 反查本插件所在的 jar 标识。
      *
      * @param admin 插件管理服务
-     * @return 模块 ID；找不到时返回 {@code null}
+     * @return jar 标识；找不到时返回 {@code null}
      */
-    private String selfModuleId(PluginAdmin admin) {
-        for (PluginModuleView module : admin.getModules()) {
-            for (PluginView plugin : module.getPlugins()) {
-                if (getMetadata().getName().equals(plugin.getName())) {
-                    return module.getId();
-                }
+    private String selfArtifactId(PluginAdmin admin) {
+        for (PluginView plugin : admin.getPlugins()) {
+            if (getMetadata().getName().equals(plugin.getName())) {
+                return plugin.getArtifactId();
             }
         }
         return null;

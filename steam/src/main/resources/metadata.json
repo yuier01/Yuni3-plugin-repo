@@ -1,4 +1,4 @@
 {
-  "module_id": "steam",
-  "module_name": "steam 相关功能"
+  "id": "steam",
+  "name": "steam 相关功能"
 }
