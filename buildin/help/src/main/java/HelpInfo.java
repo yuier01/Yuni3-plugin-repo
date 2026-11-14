@@ -47,7 +47,7 @@ public class HelpInfo implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        ctx.command(Commands.on(ROOT, (event, reply) ->
+        ctx.command(Commands.on(ROOT, (event, result, reply) ->
                 reply.quote().text(ctx.getConfigLoader().loadText(HELP_FILE)).send()));
     }
 }

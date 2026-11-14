@@ -217,9 +217,9 @@ public class Steam implements YuniPlugin {
         return Commands.on(CommandNode.builder(CHILD_BIND)
                 .description("绑定 steam id")
                 .arg(ArgDef.required(ARG_STEAM_ID, "steam id"))
-                .build(), (event, reply) -> {
+                .build(), (event, result, reply) -> {
             long userId = event.getUserId();
-            String steamId = event.getCommandResult().getArg(ARG_STEAM_ID).asText().trim();
+            String steamId = result.getArg(ARG_STEAM_ID).asText().trim();
 
             List<UserSteamId> existing = steam.findBindingsByUserId(userId);
             if (!existing.isEmpty()) {
@@ -252,7 +252,7 @@ public class Steam implements YuniPlugin {
     private CommandNode unbindNode(SteamStatusService steam) {
         return Commands.on(CommandNode.builder(CHILD_UNBIND)
                 .description("解绑 steam id")
-                .build(), (event, reply) -> {
+                .build(), (event, result, reply) -> {
             long userId = event.getUserId();
             List<UserSteamId> existing = steam.findBindingsByUserId(userId);
             if (existing.isEmpty()) {

@@ -119,7 +119,7 @@ public class Fortune implements YuniPlugin {
         List<PrincessFortune> princessFortunes =
                 List.of(ctx.getConfigLoader().load(CONFIG_PCR, PrincessFortune[].class));
 
-        ctx.command(Commands.on(ROOT, (event, reply) -> {
+        ctx.command(Commands.on(ROOT, (event, result, reply) -> {
             // 命令处理器收到的是命令引擎的原生事件，取值方式与旧 execute() 一致
             long userId = event.getUserId();
 

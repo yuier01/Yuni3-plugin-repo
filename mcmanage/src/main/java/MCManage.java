@@ -1,5 +1,6 @@
 import com.yuier.yuni.core.constants.SystemConstants;
 import com.yuier.yuni.core.event.YuniMessageEvent;
+import com.yuier.yuni.core.event.matched.CommandResult;
 import com.yuier.yuni.event.detector.message.command.model.ArgDef;
 import com.yuier.yuni.event.detector.message.command.model.CommandNode;
 import com.yuier.yuni.plugin.api.Commands;
@@ -110,7 +111,7 @@ public class MCManage implements YuniPlugin {
                 .child(reAddressNode(ctx))
                 .build(),
                 // 根节点处理器 = 状态查询。取代旧 execute() 末尾的 else 兜底分支
-                (event, reply) -> queryStatus(ctx, event, reply));
+                (event, result, reply) -> queryStatus(ctx, event, result, reply));
     }
 
     /**
@@ -124,9 +125,9 @@ public class MCManage implements YuniPlugin {
                 .description("添加 MC 服务器")
                 .arg(ArgDef.required(服务器名称, "MC 服务器名称"))
                 .arg(ArgDef.required(服务器地址, "服务器地址"))
-                .build(), (event, reply) -> {
+                .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var args = event.getCommandResult().getChild(添加);
+            var args = result.getChild(添加);
             String serverName = args.getArg(服务器名称).asText();
             String serverAddr = args.getArg(服务器地址).asText();
 
@@ -161,9 +162,9 @@ public class MCManage implements YuniPlugin {
         return Commands.on(CommandNode.builder(删除)
                 .description("删除 MC 服务器")
                 .arg(ArgDef.required(服务器名称, "MC 服务器名称"))
-                .build(), (event, reply) -> {
+                .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            String serverName = event.getCommandResult().getChild(删除).getArg(服务器名称).asText();
+            String serverName = result.getChild(删除).getArg(服务器名称).asText();
 
             if (findByName(ctx, groupId, serverName) == null) {
                 reply.quote().text(notFound(serverName)).send();
@@ -188,9 +189,9 @@ public class MCManage implements YuniPlugin {
                 .description("修改 MC 服务器名称")
                 .arg(ArgDef.required(服务器名称, "MC 服务器旧名称"))
                 .arg(ArgDef.required(服务器新名称, "MC 服务器新名称"))
-                .build(), (event, reply) -> {
+                .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var args = event.getCommandResult().getChild(修改名称);
+            var args = result.getChild(修改名称);
             String serverName = args.getArg(服务器名称).asText();
             String newServerName = args.getArg(服务器新名称).asText();
 
@@ -222,9 +223,9 @@ public class MCManage implements YuniPlugin {
                 .description("修改 MC 服务器地址")
                 .arg(ArgDef.required(服务器名称, "MC 服务器旧名称"))
                 .arg(ArgDef.required(服务器地址, "MC 服务器地址"))
-                .build(), (event, reply) -> {
+                .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var args = event.getCommandResult().getChild(修改地址);
+            var args = result.getChild(修改地址);
             String serverName = args.getArg(服务器名称).asText();
             String newServerAddr = args.getArg(服务器地址).asText();
 
@@ -258,9 +259,8 @@ public class MCManage implements YuniPlugin {
      * @param event 事件
      * @param reply 回复入口
      */
-    private void queryStatus(YuniContext ctx, YuniMessageEvent event, Reply reply) {
+    private void queryStatus(YuniContext ctx, YuniMessageEvent event, CommandResult result, Reply reply) {
         long groupId = event.getGroupId();
-        var result = event.getCommandResult();
 
         if (!result.hasArg(服务器名称)) {
             List<GroupMcServer> servers = repo(ctx).findByField("groupId", groupId);

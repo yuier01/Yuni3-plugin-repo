@@ -76,8 +76,7 @@ public class PigToday implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        ctx.command(Commands.on(ROOT, (event, reply) -> {
-            var result = event.getCommandResult();
+        ctx.command(Commands.on(ROOT, (event, result, reply) -> {
             if (!result.hasArg(ARG_TARGET_MEMBER)) {
                 // 未指定目标：查自己
                 reply.quote()

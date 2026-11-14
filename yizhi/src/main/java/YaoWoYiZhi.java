@@ -84,8 +84,8 @@ public class YaoWoYiZhi implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        ctx.command(Commands.on(ROOT, (event, reply) -> {
-            var image = event.getCommandResult().getArg(ARG_TARGET_IMAGE).asImage();
+        ctx.command(Commands.on(ROOT, (event, result, reply) -> {
+            var image = result.getArg(ARG_TARGET_IMAGE).asImage();
             String imageFileUrl = image.getUrl();
             String imageEndName = resolveExtension(image.getFile(), imageFileUrl);
 

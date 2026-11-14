@@ -1,5 +1,6 @@
 package notice;
 
+import com.yuier.yuni.core.event.notice.PokeEvent;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 
@@ -70,21 +71,23 @@ public class PokeNotice implements YuniPlugin {
     public void apply(YuniContext ctx) {
         // 只需声明子类型：戳一戳的判定在注册时完成，处理器拿到的必定是 poke
         ctx.onNotice("poke", (ev, reply) -> {
-            // 只响应「戳的是机器人自己」——target_id 由适配器从 OneBot 字段补齐，
-            // 旧实现需要 unbox 判空后再比，新系统用 Optional 链式表达
-            Long target = ev.getTargetId().orElse(null);
-            if (target == null || target != ev.getSelfId()) {
+            // 只响应「戳的是机器人自己」
+            if (!(ev instanceof PokeEvent poke)) {
+                return;
+            }
+            Long target = poke.getTargetId();
+            if (target == null || !target.equals(poke.getSelfId())) {
                 return;
             }
 
-            Long groupId = ev.getGroupId().orElse(null);
+            Long groupId = poke.getGroupId();
             if (groupId == null) {
                 // 戳一戳出现在非群会话：当前实现只处理群内
                 return;
             }
 
-            int count = countFor(ctx, groupId, ev.getUserId());
-            reply.at(ev.getUserId()).text(POKE_MESSAGES[count]).send();
+            int count = countFor(ctx, groupId, poke.getUserId());
+            reply.at(poke.getUserId()).text(POKE_MESSAGES[count]).send();
         });
     }
 

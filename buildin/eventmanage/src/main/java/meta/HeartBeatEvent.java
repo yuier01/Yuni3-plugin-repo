@@ -1,5 +1,6 @@
 package meta;
 
+import com.yuier.yuni.core.event.meta.YuniHeartbeatEvent;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.YuniPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -45,11 +46,14 @@ public class HeartBeatEvent implements YuniPlugin {
     @Override
     public void apply(YuniContext ctx) {
         // 只需声明元事件类型；「是不是心跳」的判定在注册时完成
-        ctx.onMeta("heartbeat", (ev, reply) ->
-                log.debug("[心跳] online={}, good={}, interval={}ms",
-                        ev.isStatusOnline(),
-                        ev.isStatusGood(),
-                        // 字段由适配器保留——旧实现在此只能拿到 null
-                        ev.getHeartbeatInterval().orElse(-1L)));
+        ctx.onMeta("heartbeat", (ev, reply) -> {
+            if (!(ev instanceof YuniHeartbeatEvent heartbeat)) {
+                return;
+            }
+            log.debug("[心跳] online={}, good={}, interval={}ms",
+                    heartbeat.isStatusOnline(),
+                    heartbeat.isStatusGood(),
+                    heartbeat.getHeartbeatInterval().orElse(-1L));
+        });
     }
 }

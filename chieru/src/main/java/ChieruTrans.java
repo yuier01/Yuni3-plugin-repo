@@ -68,8 +68,8 @@ public class ChieruTrans implements YuniPlugin {
                         .description("切噜语编码")
                         .arg(ArgDef.required(ARG_ENCODE, "要编码的文本", CommandArgRequireType.PLAIN))
                         .build(),
-                (event, reply) -> {
-                    String raw = event.getCommandResult().getArg(ARG_ENCODE).asText();
+                (event, result, reply) -> {
+                    String raw = result.getArg(ARG_ENCODE).asText();
                     reply.text(chieruMap.get(0) + TransferUtil.encode(raw, chieruMap)).send();
                 });
 
@@ -78,8 +78,8 @@ public class ChieruTrans implements YuniPlugin {
                         .description("切噜语解码")
                         .arg(ArgDef.required(ARG_DECODE, "要还原的切噜语文本", CommandArgRequireType.PLAIN))
                         .build(),
-                (event, reply) -> {
-                    String encoded = event.getCommandResult().getArg(ARG_DECODE).asText();
+                (event, result, reply) -> {
+                    String encoded = result.getArg(ARG_DECODE).asText();
                     // 标识符校验保持旧行为：缺少前缀时给出明确提示而不是抛异常
                     String marker = chieruMap.get(0);
                     if (!encoded.startsWith(marker)) {

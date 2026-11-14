@@ -64,8 +64,8 @@ public class HooTrans implements YuniPlugin {
                         .description("齁哦语编码")
                         .arg(ArgDef.required(ARG_ENCODE, "要编码的文本", CommandArgRequireType.PLAIN))
                         .build(),
-                (event, reply) -> {
-                    String raw = event.getCommandResult().getArg(ARG_ENCODE).asText();
+                (event, result, reply) -> {
+                    String raw = result.getArg(ARG_ENCODE).asText();
                     reply.text(hooMap.get(0) + TransferUtil.encode(raw, hooMap)).send();
                 });
 
@@ -74,8 +74,8 @@ public class HooTrans implements YuniPlugin {
                         .description("齁哦语解码")
                         .arg(ArgDef.required(ARG_DECODE, "要还原的齁哦语文本", CommandArgRequireType.PLAIN))
                         .build(),
-                (event, reply) -> {
-                    String encoded = event.getCommandResult().getArg(ARG_DECODE).asText();
+                (event, result, reply) -> {
+                    String encoded = result.getArg(ARG_DECODE).asText();
                     String marker = hooMap.get(0);
                     if (!encoded.startsWith(marker)) {
                         reply.text("非法齁哦语文本，开头缺少标识符 " + marker).send();

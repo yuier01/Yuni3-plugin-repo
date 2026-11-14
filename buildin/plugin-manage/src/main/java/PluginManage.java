@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import com.yuier.yuni.core.event.YuniMessageEvent;
+import com.yuier.yuni.core.event.matched.CommandResult;
 
 /**
  * 插件管理——查看 / 开启 / 关闭 / 重载插件。
@@ -159,9 +160,9 @@ public class PluginManage implements YuniPlugin {
         return Commands.on(CommandNode.builder(CHILD_VIEW)
                 .description("查看插件列表或指定插件详情")
                 .arg(ArgDef.optional(ARG_PLUGIN, "插件标识（留空则查看列表）"))
-                .build(), (event, reply) -> {
+                .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var child = event.getCommandResult().getChild(CHILD_VIEW);
+            var child = result.getChild(CHILD_VIEW);
             if (!child.hasArg(ARG_PLUGIN)) {
                 showList(ctx, support, reply, event.getPosition(), groupId);
                 return;
@@ -189,8 +190,8 @@ public class PluginManage implements YuniPlugin {
         return Commands.on(CommandNode.builder(CHILD_ENABLE)
                 .description("在当前群开启指定插件")
                 .arg(ArgDef.required(ARG_PLUGIN, "插件标识"))
-                .build(), (event, reply) ->
-                setEnabled(ctx, support, reply, event, true));
+                .build(), (event, result, reply) ->
+                setEnabled(ctx, support, reply, event, result, true));
     }
 
     /**
@@ -204,8 +205,8 @@ public class PluginManage implements YuniPlugin {
         return Commands.on(CommandNode.builder(CHILD_DISABLE)
                 .description("在当前群关闭指定插件")
                 .arg(ArgDef.required(ARG_PLUGIN, "插件标识"))
-                .build(), (event, reply) ->
-                setEnabled(ctx, support, reply, event, false));
+                .build(), (event, result, reply) ->
+                setEnabled(ctx, support, reply, event, result, false));
     }
 
     /**
@@ -222,8 +223,8 @@ public class PluginManage implements YuniPlugin {
                 // 节点级权限由框架递归校验，插件不需要自己判
                 .permission(UserPermission.ADMIN)
                 .arg(ArgDef.optional(ARG_RELOAD_TARGET, "插件标识（留空则重载全部）"))
-                .build(), (event, reply) -> {
-            var child = event.getCommandResult().getChild(CHILD_RELOAD);
+                .build(), (event, result, reply) -> {
+            var child = result.getChild(CHILD_RELOAD);
             if (!child.hasArg(ARG_RELOAD_TARGET)) {
                 reloadAll(ctx, reply);
                 return;
@@ -327,8 +328,8 @@ public class PluginManage implements YuniPlugin {
      */
     private void setEnabled(YuniContext ctx, PluginManageSupport support,
                             Reply reply, YuniMessageEvent event,
-                            boolean enabled) {
-        String raw = event.getCommandResult().getChild(
+                            CommandResult result, boolean enabled) {
+        String raw = result.getChild(
                 enabled ? CHILD_ENABLE : CHILD_DISABLE).getArg(ARG_PLUGIN).asText().trim();
 
         Optional<PluginView> found = resolve(ctx, raw);

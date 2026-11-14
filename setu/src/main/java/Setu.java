@@ -45,7 +45,7 @@ public class Setu implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        ctx.command(Commands.on(ROOT, (event, reply) -> {
+        ctx.command(Commands.on(ROOT, (event, result, reply) -> {
             LoliconApiResponse response;
             try {
                 response = ctx.getHttp()

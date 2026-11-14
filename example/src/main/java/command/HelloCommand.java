@@ -40,6 +40,6 @@ public class HelloCommand implements YuniPlugin {
     @Override
     public void apply(YuniContext ctx) {
         // 处理器绑在节点上：声明与实现在同一处
-        ctx.command(Commands.on(ROOT, (event, reply) -> reply.text("Hello Command!").send()));
+        ctx.command(Commands.on(ROOT, (event, result, reply) -> reply.text("Hello Command!").send()));
     }
 }
