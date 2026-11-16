@@ -12,48 +12,6 @@ import java.util.List;
 /**
  * 每日早报——每天 08:30 把当天的早报图片发到已启用本插件的群。
  *
- * <h2>迁移说明（P5）</h2>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code extends ScheduledPlugin} +
- *       {@code cronExpression()} + {@code getAction()}</td>
- *       <td>{@code ctx.schedule(cron, task)}</td></tr>
- *   <tr><td>{@code PluginUtils.simplePost(url, null, C.class)}</td>
- *       <td>{@code ctx.getHttp().post(url).execute(C.class)}</td></tr>
- *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(..., this.getClass())}</td>
- *       <td>{@code ctx.getConfigLoader().loadOrDefault(...)}</td></tr>
- *   <tr><td>{@code DBHelper.findBlackLists() / findWhiteLists()}
- *       ——插件自建的 {@code daily_news_group_enable} 表</td>
- *       <td>{@code ctx.getScope().isEnabledIn(groupId)}——框架的群粒度启停</td></tr>
- *   <tr><td>{@code PluginUtils.sendGroupMessage(groupId, MessageChain)}</td>
- *       <td>{@code ctx.getSender().group(groupId).image(url).send()}</td></tr>
- * </table>
- *
- * <h2>本批次中唯一一处「语义合并」（重要）</h2>
- * <p>旧插件自己维护了一张 {@code daily_news_group_enable} 表（{@code black} /
- * {@code white} 两列，配合 {@code daily_news_strategy.json} 里的
- * {@code "strategy": "blacklist"｜"whitelist"} 决定生效群）。</p>
- *
- * <p>这与框架的 <b>群粒度插件启停</b>（设计文档 §8）是<b>同一件事的两种实现</b>：
- * 前者是插件私有的、只有本插件认识的表；后者是框架级、管理端可见、对所有插件
- * 一致的能力。新系统统一到后者，因此本插件不再读写该表。</p>
- *
- * <h3>升级影响</h3>
- * <p>已部署环境中若在旧表里配置过例外群，需要在新系统的群粒度启停里重新配置一次
- * （或调用 {@code PluginRuntime} 的 scope 接口写入等价配置）。旧表不会被自动读取，
- * 也不会被删除——它不再被任何代码引用，需要时可手工清理。</p>
- * <p>向后兼容性上这是<b>有意的破坏</b>：保留两套群启停机制会让「为什么这个群收到
- * 早报但没收到疯狂星期四」变成一个需要读插件源码才能回答的问题。</p>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>接口返回 null 会 NPE</b>：旧实现直接 {@code dailyNewsResponse.getDatatime()}，
- *       请求失败或响应体为空时抛 {@code NullPointerException}。
- *       新实现先判空并降级为「本轮不发送」。</li>
- *   <li><b>图片地址为空也照发</b>：旧实现不校验 {@code imageUrl}。
- *       新实现检查后跳过。</li>
- * </ol>
  */
 @Slf4j
 public class DailyNews implements YuniPlugin {
@@ -106,7 +64,6 @@ public class DailyNews implements YuniPlugin {
         int sent = 0;
         for (BotGroupInfo group : groups) {
             long groupId = group.getGroupId();
-            // 群粒度启停：取代旧的 daily_news_group_enable 表 + strategy 配置
             if (!scope.isEnabledIn(groupId)) {
                 continue;
             }

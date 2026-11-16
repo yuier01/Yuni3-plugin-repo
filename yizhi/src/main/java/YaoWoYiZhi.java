@@ -26,30 +26,6 @@ import java.util.Set;
 /**
  * 要我一直 x 吗——把用户发来的图片做成表情包。
  *
- * <h2>迁移说明（P5）</h2>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code extends CommandPlugin} + {@code getDetector()}/{@code execute()} 两段式</td>
- *       <td>{@code Commands.on(ROOT, handler)} 就地绑定</td></tr>
- *   <tr><td>{@code eventContext.getChatSession().response(new MessageChain(...))}</td>
- *       <td>{@code reply.text(...)} / {@code reply.image("base64://...")}</td></tr>
- *   <tr><td>{@code PluginUtils.loadFontFromPlugin(..., YaoWoYiZhi.class)} 在逐帧处理里调用</td>
- *       <td>{@code ctx.getConfigLoader().open(...)}，且字体只在每次命令处理开始时加载<b>一次</b></td></tr>
- * </table>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>字体逐帧解析</b>：旧 {@code processSingleFrame} 每帧都调
- *       {@code loadFontFromPlugin}，一张 60 帧的 GIF 就要解析 60 次 OTF/TTF。
- *       字体现在由 {@link #execute} 一次性加载后传入，静态图与 GIF 共用同一份。</li>
- *   <li><b>以「文件名后缀」判定格式过于脆弱</b>：QQ 上报的 {@code file} 字段
- *       可能是无扩展名的哈希串，旧代码 {@code split("\\.")[split.length - 1]}
- *       在无点号时会把整个串当后缀，从而落进「不支持的图片格式」。
- *       现在同时看 {@code file} 与 {@code url}，并只在真正拿到扩展名时判定。</li>
- *   <li><b>{@code printStackTrace}</b>：旧代码用 {@code e.printStackTrace()} 记录
- *       图片下载失败，不走日志框架。已改为 {@code log.error}。</li>
- * </ol>
  */
 @Slf4j
 public class YaoWoYiZhi implements YuniPlugin {

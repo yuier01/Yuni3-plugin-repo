@@ -17,12 +17,6 @@ import java.util.List;
 /**
  * Steam 相关功能——状态监控与 id 绑定/解绑。
  *
- * <h2>为什么是一个插件类</h2>
- * <p>旧实现拆成 {@code MemberSteamStatus} 与 {@code UserRegisterSteamId} 两个插件，
- * 但两者共享同一个 {@link SteamStatusService}、同一张绑定表、同一份状态缓存，
- * 并且「绑定」是「监控」的前置条件。在新系统里一个 {@code apply} 可以同时注册
- * 定时任务与命令树，因此合并为一个入口，避免两个插件各自初始化一遍数据库与缓存。</p>
- *
  * <h2>群粒度启停</h2>
  * <p>监控只向 {@link SteamStatusService#enabledGroupsOfUser(long)} 返回的群播报——
  * 这些群同时满足「用户在该群」「bot 在该群」「本插件在该群生效」。</p>
@@ -71,7 +65,6 @@ public class Steam implements YuniPlugin {
             return;
         }
         int pageCount = (int) ((total + SteamStatusService.BATCH_SIZE - 1) / SteamStatusService.BATCH_SIZE);
-        // 页码从 0 连续递增——旧实现把页码与 offset 混用且步长写错，会漏掉中间的页
         for (int page = 0; page < pageCount; page++) {
             List<UserSteamId> bindings = steam.findBindingsByPage(page, SteamStatusService.BATCH_SIZE);
             if (bindings.isEmpty()) {
@@ -228,7 +221,6 @@ public class Steam implements YuniPlugin {
                 return;
             }
             if (steamId.isEmpty()) {
-                // 旧实现直接把它写进数据库，之后每一轮监控都会拿一个空 id 去请求接口
                 reply.quote().text("steam id 不能为空。").send();
                 return;
             }
@@ -262,7 +254,6 @@ public class Steam implements YuniPlugin {
             String steamId = existing.getFirst().getSteamId();
             steam.deleteBinding(userId);
             steam.removeIdMapping(steamId);
-            // 一并清理状态快照：旧实现漏了这一步，导致重新绑定后会误播报状态变化
             steam.removeCachedStatus(steamId);
             reply.quote().text("你已解除绑定 steam id: " + steamId).send();
         });

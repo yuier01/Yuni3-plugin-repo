@@ -20,31 +20,11 @@ import java.util.Set;
 /**
  * Steam 状态服务的<b>实例化</b>工具。
  *
- * <h2>迁移说明（P5）：为什么从静态工具类变成实例</h2>
- * <p>旧实现由两个静态工具类组成——{@code SteamStatusUtil}（业务逻辑）与
- * {@code RedisHelper}（缓存读写）。它们全部是 {@code static} 方法，内部靠
- * {@code PluginUtils} 静态门面拿机器人、拿 Bean、读写 Redis、序列化 JSON。
- * 具体问题：</p>
- * <ol>
- *   <li><b>缓存读写散落两处</b>：{@code RedisHelper} 只是把
- *       {@code RedisUtil} 的 8 个方法原样转发一遍，业务代码还得自己
- *       {@code PluginUtils.serialize/deserialize}——序列化与键名约定被拆到了
- *       两个文件里，改一处要同时改另一处。</li>
- *   <li><b>依赖 {@code PluginEnableProcessor} 内部 API</b>：
- *       {@code MemberSteamStatus} 直接 {@code PluginUtils.getBean(PluginEnableProcessor.class)}
- *       查询「本群是否启用本插件」。这是框架内部类，插件本不应该依赖它。</li>
- *   <li><b>静态方法无法测试</b>：任何针对状态差分逻辑的测试都要起整个 Spring 容器。</li>
- * </ol>
- * <p>新实现把这个服务做成<b>持有 {@link YuniContext} 的实例</b>：插件在
- * {@code apply(ctx)} 里 {@code new SteamStatusService(ctx)} 并自己保存引用，
- * 全部依赖都从 {@code ctx} 取——可打桩、依赖显式、键名与序列化集中在一处。</p>
- *
  * <h2>两个缓存键</h2>
  * <ul>
  *   <li>{@link #KEY_STEAM_ID_TO_USER_ID}：steamid → QQ 号（绑定关系）；</li>
  *   <li>{@link #KEY_STEAM_ID_TO_STATUS}：steamid → 上一次看到的玩家状态（差分基准）。</li>
  * </ul>
- * <p>键名沿用旧值，因此历史缓存仍可直接使用。</p>
  */
 @Slf4j
 public class SteamStatusService {
@@ -84,11 +64,7 @@ public class SteamStatusService {
 
     /**
      * 注册实体并建表。
-     *
-     * <p>取代旧 {@code DBHelper.createTableIfNotExists()}——旧实现手写
-     * {@code @SqlUpdate("CREATE TABLE IF NOT EXISTS ...")} 并把 DDL 文本与实体类
-     * 分开维护，加字段时容易漏改。新系统由 {@code TableSchema} 从实体类推导 DDL。</p>
-     */
+ */
     public void initDatabase() {
         ctx.getDb().registerEntity(UserSteamId.class);
     }
@@ -146,13 +122,7 @@ public class SteamStatusService {
 
     /**
      * 把数据库中的全部绑定关系同步到缓存。
-     *
-     * <p>取代旧 {@code syncDbToRedis()}。旧实现先 {@code delete(key)} 再
-     * {@code hSetAll(...)}——两步之间缓存是空的，若此时有查询会读到「没有绑定」。
-     * 新实现逐字段写入，不做整体删除：哈希里多出来的历史字段无害
-     * （{@link #getUserIdBySteamId} 查不到就返回 {@code null}），
-     * 而中间态不会出现「全部消失」。</p>
-     */
+ */
     public void syncDbToCache() {
         long total = countBindings();
         if (total == 0) {
@@ -198,18 +168,13 @@ public class SteamStatusService {
         if (steamId == null) {
             return null;
         }
-        // 直接按目标类型读取，取代旧的「hGetAll 拿 Object 再手写 toString 转 Long」
         return ctx.getCache().hashGet(KEY_STEAM_ID_TO_USER_ID, steamId, Long.class)
                 .orElse(null);
     }
 
     /**
      * 读取某玩家上一次的状态快照。
-     *
-     * <p>取代旧 {@code getPlayerStatusBySteamId}——旧实现先取整个哈希
-     * （{@code HGETALL}，n 个绑定就要传 n 条 value），再 {@code PluginUtils.deserialize}。
-     * 新实现只取需要的那个字段，并且由 {@link YuniCache} 负责反序列化。</p>
-     *
+ *
      * @param steamId steam id
      * @return 状态快照；无记录时返回 {@code null}
      */
@@ -246,12 +211,7 @@ public class SteamStatusService {
 
     /**
      * 批量查询玩家概况。
-     *
-     * <p>取代旧 {@code PluginUtils.simpleGet(url, ...)}——旧的 {@code baseUrl}
-     * 是「地址 + key + steamids=」手工拼出来的三段字符串，而 {@code simpleGet} 的
-     * 第二个参数名义上是「参数」实际是 URL 模板变量（审计报告已记录该命名误导）。
-     * 新实现用 {@code query(...)} 显式表达查询参数，URL 拼接不再手工完成。</p>
-     *
+ *
      * @param steamIds steam id 列表
      * @return 玩家概况列表；请求失败或响应为空时返回空列表
      */
@@ -294,15 +254,10 @@ public class SteamStatusService {
 
     /**
      * 补齐玩家状态里的「游戏中文名」。
-     *
-     * <p>旧实现把 appdetails 的响应当成裸 {@code Map} 反序列化，然后一路
-     * {@code instanceof Map} + 强制转型向下取 {@code data.name}——既无法静态检查，
-     * 又要把 {@code @SuppressWarnings} 贴在三个地方。新实现用
-     * {@link AppDetailResponse} 描述响应结构，取值变成普通 getter。</p>
-     *
+ *
      * <p>任何一步拿不到中文名都回退到 {@code gameextrainfo}（Steam 给的英文名），
      * 与旧行为一致。</p>
-     *
+ *
      * @param player 玩家状态；{@code null} 或不在游戏中时直接返回
      */
     public void fillGameChineseName(SinglePlayerSummary player) {
@@ -347,15 +302,7 @@ public class SteamStatusService {
 
     /**
      * 找出某个用户所在的、且<b>启用了本插件</b>的群。
-     *
-     * <h3>迁移要点</h3>
-     * <p>旧实现是两步：{@code PluginUtils.findUserGroups(userId)} 拿全部群，
-     * 再用 {@code PluginUtils.getBean(PluginEnableProcessor.class).isPluginEnabled(groupId, this.getClass())}
-     * 逐个判定。后者是框架内部 API，且需要把插件自己的 {@code Class} 传进去
-     * 当身份标识。</p>
-     * <p>新实现用 {@link ScopeQuery}——由框架提供、插件侧稳定的契约，
-     * 不需要暴露自己的 Class，也不需要从 Spring 容器里取 Bean。</p>
-     *
+ *
      * @param userId 目标 QQ 号
      * @return 群号列表；用户不在任何启用本插件的群时为空列表
      */

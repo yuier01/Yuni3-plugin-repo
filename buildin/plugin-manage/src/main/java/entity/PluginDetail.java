@@ -9,19 +9,6 @@ import java.util.List;
 /**
  * 插件详情展示页的数据。
  *
- * <h2>迁移说明（P5）</h2>
- * <p>相比旧版本有三处变化，都是为了回答「插件现在到底怎么样了」：</p>
- * <ol>
- *   <li>{@code index}（全局序号）→ {@link #id}（稳定标识）+ {@link #moduleName}
- *       （所属模块）——序号在热重载后会漂移，见
- *       {@link PluginListSinglePlugin} 的说明；</li>
- *   <li>新增 {@link #stateName} / {@link #stateKey}——现行系统的插件详情
- *       <b>完全看不到插件状态</b>，于是「插件在列表里但没反应」无法诊断。
- *       新系统把这个信息摆在详情页最显眼的位置；</li>
- *   <li>新增 {@link #failureSummary} 与 {@link #missingServices}——分别是
- *       「加载失败的原因」与「在等哪个服务」，也就是
- *       「我的插件为什么没启动」这个问题的两个答案。</li>
- * </ol>
  */
 @Data
 @NoArgsConstructor

@@ -30,42 +30,6 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * 今日运势——每日一抽，结果当天不变。
  *
- * <h2>迁移说明（P5）</h2>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code extends CommandPlugin} + {@code getDetector()}/{@code execute()} 两段式</td>
- *       <td>{@code Commands.on(ROOT, handler)} 就地绑定</td></tr>
- *   <tr><td>{@code RedisUtil.exists + get + 手写 Map 序列化}</td>
- *       <td>{@code ctx.getCache().hashGet / hashSet / hashDelete}</td></tr>
- *   <tr><td>{@code PluginUtils.loadJsonConfigFromPlugin(..., this.getClass())}</td>
- *       <td>{@code ctx.getConfigLoader().load(...)}——不再需要把「我是谁」当参数传进去</td></tr>
- *   <tr><td>{@code PluginUtils.loadFontFromPlugin(..., Fortune.class)}</td>
- *       <td>{@code ctx.getConfigLoader().open(...)} + {@code Font.createFont}，并把结果缓存</td></tr>
- *   <tr><td>{@code PluginUtils.getPluginRootPath(this.getClass())} 拼图片路径</td>
- *       <td>{@code ctx.getDataDir().resolve(...)}</td></tr>
- *   <tr><td>抽签结果直接拼 {@code MessageChain(ImageSegment)}</td>
- *       <td>画图方法只产 Base64 字符串，发送统一走 {@code reply.image(...)}</td></tr>
- * </table>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>「先建空 Map 再二次读取」的竞态与 NPE</b>：旧 {@code execute} 在
- *       {@code RedisUtil.exists} 为假时先 {@code set(key, new HashMap<>())}，
- *       随后又 {@code get(key)} 并直接 {@code put}——两步之间键若被清理，
- *       第二次 {@code get} 返回 {@code null}，{@code put} 抛 NPE。改用哈希字段后
- *       不再需要这套两步操作。</li>
- *   <li><b>同一哈希无限增长</b>：旧实现把日期写在每个 value 里，历史日期的条目
- *       永远留在同一个哈希中，既占内存又让「今天抽过没有」需要逐个反序列化比对。
- *       现在日期进入字段名，且跨日首次访问时清理昨日字段。</li>
- *   <li><b>未命中缓存时 cache 为 null 的隐含假设</b>：旧代码在凶→姬吉分支里
- *       重新 {@code get} 一次哈希（{@code pigTodayMap} 变量名还是从别处抄来的），
- *       同样可能为 {@code null}。现在只写自己构造的对象。</li>
- *   <li><b>绘图异常直接冒泡</b>：{@code ImageIO.read} 失败时旧代码只 log 不返回，
- *       随后 {@code img.createGraphics()} 对 {@code null} 抛 NPE。现在明确降级为
- *       一条文本提示。</li>
- * </ol>
- *
  * <h2>关于「一天内结果不变」</h2>
  * <p>这是本插件的核心语义，与今日猪猪一致：同一个人在同一天内重复抽取得到同一支签。
  * 实现方式是把结果按「日期 + QQ号」作为哈希字段缓存。</p>
@@ -104,17 +68,12 @@ public class Fortune implements YuniPlugin {
 
     /**
      * 上一次写入缓存时的日期。
-     *
-     * <p>用于「跨日清理昨日字段」。是插件实例字段而非静态字段——
-     * 新系统中插件全局只有一个实例，实例字段的语义与旧的静态字段等价，
-     * 但不会泄漏到别的类加载器之外（热重载时会随实例一起丢弃）。</p>
-     */
+ */
     private volatile String lastCacheDate;
 
 
     @Override
     public void apply(YuniContext ctx) {
-        // 签库在注册时读一次即可。旧实现在每次执行时都读盘 + 反序列化，
         // 而这份配置是随插件发布的静态资源，运行期不会变。
         List<PrincessFortune> princessFortunes =
                 List.of(ctx.getConfigLoader().load(CONFIG_PCR, PrincessFortune[].class));
@@ -159,8 +118,6 @@ public class Fortune implements YuniPlugin {
             Reply.SentResult sent = reply.image(base64).send();
 
             // 4. 抽到「凶」就换成姬吉。
-            //    旧实现在这里先发一次凶、再发一次替换结果，用户会看到两条消息；
-            //    新实现保持同样的两段式交互，但把替换后的结果写入缓存。
             if (item.getTitle() != null && item.getTitle().contains("凶")) {
                 FortuneItem hiMe = randomOf(findHiMe(princess));
                 if (hiMe == null) {
@@ -213,12 +170,7 @@ public class Fortune implements YuniPlugin {
 
     /**
      * 清理非今日的缓存字段。
-     *
-     * <p>旧实现把日期写在 value 里，于是同一个哈希会随使用持续增长，
-     * 且每次判定都要反序列化 value。现在日期在字段名里，扫描字段名即可识别
-     * 过期条目。清理只在跨日后的首次写入时做一次，不放在读取路径上——
-     * 读取路径应当尽量短。</p>
-     *
+ *
      * @param ctx 插件上下文
      */
     private void purgeYesterday(YuniContext ctx) {
@@ -284,12 +236,7 @@ public class Fortune implements YuniPlugin {
 
     /**
      * 绘制运势图并编码为 Base64。
-     *
-     * <p>与旧实现的差别：本方法只返回字符串，不构造 {@code MessageChain}——
-     * 发送形式属于处理器的事，绘图只负责产出数据。这也让旧代码里
-     * {@code new MessageChain(new ImageSegment().setBase64File(...))} 这类
-     * 与 API 层耦合的写法消失。</p>
-     *
+ *
      * @param ctx   插件上下文
      * @param cache 运势结果
      * @return {@code base64://} 前缀的图片数据；失败时返回 {@code null}
@@ -304,7 +251,6 @@ public class Fortune implements YuniPlugin {
             try {
                 ImageIO.write(img, "PNG", baos);
             } finally {
-                // 及时释放原生图像资源；旧实现没有 flush，图片多时容易堆积
                 img.flush();
             }
             return "base64://" + Base64.getEncoder().encodeToString(baos.toByteArray());
@@ -332,7 +278,6 @@ public class Fortune implements YuniPlugin {
         Path imgPath = ctx.getDataDir().resolve("img").resolve(cache.getBackground());
         BufferedImage img = ImageIO.read(imgPath.toFile());
         if (img == null) {
-            // 旧实现在这里只 log 后继续，随后 img.createGraphics() 抛 NPE
             log.error("[今日运势] 背景图无法解码: {}", imgPath);
             return null;
         }
@@ -380,11 +325,7 @@ public class Fortune implements YuniPlugin {
 
     /**
      * 从插件资源目录加载字体。
-     *
-     * <p>旧实现走 {@code PluginUtils.loadFontFromPlugin(file, size, Fortune.class)}，
-     * 每次绘制都重新解析字体文件。字体文件解析开销不小，这里每次调用读盘一次，
-     * 但省掉了「把 class 传进去给自己查户口」的怪异签名。</p>
-     *
+ *
      * @param ctx      插件上下文
      * @param fileName 字体文件名
      * @param size     字号

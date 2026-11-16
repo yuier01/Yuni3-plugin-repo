@@ -28,55 +28,10 @@ import static utils.Constant.服务器新名称;
 /**
  * MC 服务器管理——查询状态、添加、删除、改名、改地址。
  *
- * <h2>迁移说明（P5）：三个类合并为一个</h2>
- * <p>旧实现把一件事拆在三个类里，靠 {@code MCManage.execute()} 里的一串
- * {@code if (commandResult.hasChild(...))} 粘起来：</p>
- * <table border="1">
- *   <caption>旧结构 → 新结构</caption>
- *   <tr><th>旧类</th><th>职责</th><th>新位置</th></tr>
- *   <tr><td>{@code MCManage extends CommandPlugin}</td>
- *       <td>声明命令树 + 手工分派</td>
- *       <td>本类：命令树 + {@code .on(...)} 就地绑定</td></tr>
- *   <tr><td>{@code MCServer}</td>
- *       <td>添加 / 删除 / 改名的静态方法</td>
- *       <td>本类的 {@code addServer} 等方法</td></tr>
- *   <tr><td>{@code MCStatus}</td>
- *       <td>查询状态的静态方法</td>
- *       <td>本类的 {@code queryStatus}</td></tr>
- * </table>
- *
- * <p>这不只是文件数从 3 变成 1：旧结构里「命令节点的定义」与「该节点的行为」
- * 分居两个文件，靠字符串常量（{@code 添加} / {@code 删除}）在运行期关联——
- * 改一个节点名要同时改 {@code Constant}、节点定义、以及 {@code execute()} 里的
- * 字符串判断。新结构里三者就在同一个 {@code Commands.on(node, handler)}
- * 表达式内。</p>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>根节点处理器是 {@code else} 兜底而非显式绑定</b>：旧
- *       {@code execute()} 的最后分支 {@code else { MCStatus.mcServerStatus(...) }}
- *       意味着「任何未识别的子命令都去查状态」。新实现把状态查询显式绑在
- *       <b>根节点</b>上——分发器取「匹配到的最深节点」的处理器，
- *       未匹配子命令时自然落在根节点，语义等价但意图明确。</li>
- *   <li><b>添加服务器时不校验地址是否已被本群添加</b>：旧实现只查名称重复。
- *       同名不同址的检查保留原状（名称是用户可见的主键），但把「名称查重」
- *       与「地址合法性校验」的顺序调成先查重再校验，避免对明显会失败的重名请求
- *       还去做一次网络解析。</li>
- *   <li><b>改地址时不校验新地址合法性</b>：旧 {@code verifyMCServerAddr} 直接
- *       写入，用户可以把它改成 {@code localhost} 或非法格式，之后每次查询都只拿到
- *       「地址格式不合法」。新实现走与添加相同的
- *       {@link MCManageUtils#mcServerAddrValid} 校验。</li>
- *   <li><b>{@code buildServerNameList} 用 {@code i + 1} 拼接</b>：整数与字符串
- *       相加依赖隐式转换，本类改为 {@code StringBuilder.append(int)} 链，
- *       由调用方 {@code strip()} 去掉末尾换行。</li>
- * </ol>
- *
  * <h2>关于中文标识符</h2>
  * <p>本模块（以及 {@code utils.Constant}）大量使用中文变量名与常量名，如
- * {@code 服务器名称}。这是原作者的风格，且这些名字直接对应命令参数名
- * （参数名必须是中文，用户才能写 {@code /mc 查询 生存服}）。迁移时<b>保留</b>
- * 这些名字与 {@code Constant} 中的常量，只把「静态方法 + 手工分派」的结构
- * 改为「节点处理器」。</p>
+ * {@code 服务器名称}。这些名字直接对应命令参数名
+ * （参数名必须是中文，用户才能写 {@code /mc 查询 生存服}）。</p>
  */
 @Slf4j
 public class MCManage implements YuniPlugin {
@@ -87,7 +42,6 @@ public class MCManage implements YuniPlugin {
 
     @Override
     public void apply(YuniContext ctx) {
-        // 建表 + 注册实体：旧实现走 PluginUtils.registerEntity(GroupMcServer.class)
         ctx.getDb().registerEntity(GroupMcServer.class);
         ctx.command(buildTree(ctx));
     }
@@ -110,7 +64,6 @@ public class MCManage implements YuniPlugin {
                 .child(renameNode(ctx))
                 .child(reAddressNode(ctx))
                 .build(),
-                // 根节点处理器 = 状态查询。取代旧 execute() 末尾的 else 兜底分支
                 (event, result, reply) -> queryStatus(ctx, event, result, reply));
     }
 
@@ -203,7 +156,6 @@ public class MCManage implements YuniPlugin {
                 return;
             }
 
-            // 按主键更新「按旧名称查到的那条记录」——旧实现注释里也特意强调了这一点
             record.setServerName(newServerName);
             repo(ctx).save(record);
             reply.quote().text("已修改名称为【" + serverName + "】的服务器至新名称:【" + newServerName + "】。").send();
@@ -231,7 +183,6 @@ public class MCManage implements YuniPlugin {
                 reply.quote().text(notFound(serverName)).send();
                 return;
             }
-            // 旧实现不校验新地址，用户可以把服务器改成 localhost 或非法格式
             AddrCheckResult addrCheck = MCManageUtils.mcServerAddrValid(newServerAddr);
             if (!addrCheck.isSuccess()) {
                 reply.quote().text(addrCheck.getMessage()).send();
@@ -296,12 +247,7 @@ public class MCManage implements YuniPlugin {
 
     /**
      * 按「群号 + 服务器名称」查一条记录。
-     *
-     * <p>取代旧代码里重复了四次的
-     * {@code PluginUtils.query(GroupMcServer.class).where("groupId", g).where("serverName", n).list()}
-     * 加 {@code FIRST_INDEX} 取值。抽成一个方法后，「名称在群内唯一」
-     * 这条隐含约束只在一处表达。</p>
-     *
+ *
      * @param ctx        插件上下文
      * @param groupId    群号
      * @param serverName 服务器名称

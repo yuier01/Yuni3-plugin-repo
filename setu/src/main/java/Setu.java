@@ -12,18 +12,6 @@ import java.util.Map;
 /**
  * 色图——调用 Lolicon API 取一张图并发到群聊。
  *
- * <h2>迁移说明（P5）</h2>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code extends CommandPlugin} + 两段式</td>
- *       <td>{@code Commands.on(ROOT, handler)}</td></tr>
- *   <tr><td>{@code PluginUtils.simplePost(url, params, C.class)}</td>
- *       <td>{@code ctx.getHttp().post(url).jsonBody(params).execute(C.class)}</td></tr>
- *   <tr><td>失败时 {@code getChatSession().response(...)} 逐个分支返回</td>
- *       <td>仍是逐个分支返回，但改用 {@code reply}</td></tr>
- * </table>
- *
  * <h2>为什么保留「逐个校验再返回」的写法</h2>
  * <p>外部接口的响应有多种失败形态（业务错误、空列表、图片地址缺失），
  * 每种都应给用户不同提示。新设计没有把它们合并成一个统一错误——
@@ -105,11 +93,7 @@ public class Setu implements YuniPlugin {
 
     /**
      * 单张色图的模型。
-     *
-     * <p>只保留本插件实际使用的字段（pid / title / author / urls）。
-     * 旧实体还声明了 tags、width、height 等十余个字段但从未读取——
-     * 那些字段随接口变化还会带来反序列化风险，因此不迁移。</p>
-     */
+ */
     @Data
     public static class SetuItem {
 

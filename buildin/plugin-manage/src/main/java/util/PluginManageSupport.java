@@ -32,45 +32,6 @@ import static com.microsoft.playwright.options.WaitForSelectorState.VISIBLE;
 /**
  * 插件管理插件的支撑服务——数据组装、模板渲染、HTML 截屏、结果缓存。
  *
- * <h2>迁移说明（P5）：静态工具类 → 持有 ctx 的实例</h2>
- * <p>旧 {@code PluginManageUtil} 是一个全静态类，它从 Spring 容器里捞
- * {@code PluginContainer} 与 {@code PluginEnableProcessor} 来读插件数据，
- * 并用静态方法 {@code RedisUtil} 读写缓存。迁移后：</p>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code PluginUtils.getBean(PluginContainer.class)}</td>
- *       <td>{@link PluginAdmin}（经 {@code ctx.getPlugins()}）</td></tr>
- *   <tr><td>{@code PluginUtils.getBean(PluginEnableProcessor.class)}</td>
- *       <td>{@code PluginAdmin.isEnabledIn(pluginId, groupId)}</td></tr>
- *   <tr><td>{@code RedisUtil.hGetAll / hSet} 读整个哈希再取值</td>
- *       <td>{@code ctx.getCache().hashGet / hashSet} 单字段读写</td></tr>
- *   <tr><td>{@code PluginUtils.loadTextFromPluginFolder(file, this.getClass())}</td>
- *       <td>{@code ctx.getConfigLoader().loadText(file)}</td></tr>
- *   <tr><td>全部静态方法</td><td>实例方法（渲染/截屏等纯函数仍为静态）</td></tr>
- * </table>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>缓存读取先取整个哈希再取值</b>：旧
- *       {@code getPluginListHashCodeCache} 调
- *       {@code RedisUtil.hGetAll(key)} 把<b>全部</b>会话的缓存都拉回来，再用
- *       {@code get(position)} 取其中一条。群多时这是明显的浪费（每个群各自
- *       一份缓存，N 个群就要传 N 条 value）。新实现按字段名单取。</li>
- *   <li><b>{@code printStackTrace}</b>：旧 {@code screenForHtmlStrToBase64} 与
- *       {@code screenForHtmlStrAndSave} 用 {@code e.printStackTrace()}，
- *       不走日志框架，日志文件里看不到。已改为 {@code log.error}。</li>
- *   <li><b>截屏失败静默返回 {@code null}</b>：旧实现的调用方拿到 {@code null}
- *       后会构造一个 {@code base64://null} 的消息发出去（用户看到一个裂图）。
- *       新实现由调用方显式判空并给出可读提示。</li>
- *   <li><b>{@code screenForHtmlStrToBase64} 不关闭浏览器</b>：旧实现
- *       {@code try (Playwright playwright = ...)} 只关了 Playwright，
- *       {@code Browser} 没有 {@code close()}——每次「查看插件列表」都会留下一个
- *       浏览器进程，几次之后就耗尽内存。已补上。</li>
- *   <li><b>列表哈希把 {@code enabled} 计入但没计入状态</b>：旧实现算哈希时
- *       只看名称/描述/使能。新系统多了一个「运行状态」（加载失败 / 等待依赖），
- *       而弹出插件失败恰恰是用户最需要看到变化的时刻——因此把它并入哈希。</li>
- * </ol>
  */
 @Slf4j
 public class PluginManageSupport {
@@ -193,14 +154,10 @@ public class PluginManageSupport {
 
     /**
      * 计算插件列表的内容哈希。
-     *
+ *
      * <p>哈希决定「能不能复用上次渲染的图片」。它必须覆盖<b>所有会影响渲染结果</b>
      * 的字段——漏一个就会出现「明明变了却显示旧图」。</p>
-     *
-     * <p>与旧实现的差异：把 {@code state} 也计入。旧实现只看名称/描述/使能，
-     * 于是「插件从 ACTIVE 变成 FAILED」不会让缓存失效，用户看到的仍然是
-     * 「运行中」。</p>
-     *
+ *
      * @param groupId 群号
      * @return 哈希值
      */
@@ -249,7 +206,6 @@ public class PluginManageSupport {
      * @return 哈希；不存在时返回 {@code null}
      */
     public Integer loadHashCode(String cacheKey, String field) {
-        // 单字段读取：取代旧实现的「hGetAll 拉回全部会话再取值」
         return ctx.getCache().hashGet(cacheKey, field, Integer.class).orElse(null);
     }
 
@@ -330,12 +286,7 @@ public class PluginManageSupport {
 
     /**
      * 用无头浏览器把 HTML 截屏为 Base64。
-     *
-     * <p><b>注意资源释放</b>：旧实现只关闭了 {@code Playwright} 而没有关闭
-     * {@code Browser}，于是每次调用都留下一个浏览器进程。这里两件都关——
-     * {@code Browser} 放在 {@code try-with-resources} 里，
-     * 它是 {@code AutoCloseable}。</p>
-     *
+ *
      * @param html HTML 字符串
      * @return Base64 图片数据；失败时返回 {@code null}
      */
@@ -348,7 +299,6 @@ public class PluginManageSupport {
                 return captureElementAsBase64(page);
             }
         } catch (Exception e) {
-            // 旧的 printStackTrace 不走日志框架，日志文件里看不到
             log.error("渲染插件信息图片失败", e);
             return null;
         }

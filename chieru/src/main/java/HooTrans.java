@@ -12,21 +12,6 @@ import java.util.List;
 /**
  * 齁哦语编码/解码——与 {@link ChieruTrans} 同构，只是换了一张映射表。
  *
- * <h2>迁移说明（P5）</h2>
- * <p>本类与 {@link ChieruTrans} 在旧实现里是两份近乎逐行相同的代码
- * （仅命令名、参数名、映射表字段与提示文案不同）——这是「同一份逻辑复制两份」
- * 的典型。迁移时保持两个插件独立（用户可见的命令不同、可分别启停），
- * 但把共同点收敛：</p>
- * <ul>
- *   <li>编解码算法共用 {@link TransferUtil}（旧实现已经这么做了）；</li>
- *   <li>映射表结构共用 {@link TransMap}（同一 json 文件里的 {@code hoo} 字段）；</li>
- *   <li>结构与校验逻辑各自明写，不强行抽基类——两个类的差异点（命令名、参数名、
- *       映射字段）全部是<b>常量</b>，抽基类只会把常量变成构造参数，
- *       可读性反而下降。</li>
- * </ul>
- *
- * <h2>与 {@link ChieruTrans} 相同的一处修正</h2>
- * <p>映射表在 {@code apply} 时读一次并缓存，取代旧实现「每次执行都重新读 json」。</p>
  */
 public class HooTrans implements YuniPlugin {
 

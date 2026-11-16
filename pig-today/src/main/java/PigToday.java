@@ -18,33 +18,6 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * 今日猪猪——查询自己或群友「今天是什么猪」。
  *
- * <h2>迁移说明（P5）</h2>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code extends CommandPlugin}</td><td>{@code implements YuniPlugin}</td></tr>
- *   <tr><td>{@code getDetector()} + {@code execute()} 两段式</td>
- *       <td>{@code Commands.on(ROOT, handler)} 就地绑定</td></tr>
- *   <tr><td>{@code execute()} 里 {@code if (hasArg) ... else ...} 分派</td>
- *       <td>同一个处理器内分支（单命令单参数，无需拆成子命令）</td></tr>
- *   <tr><td>{@code RedisUtil.exists + get + 手写 Map 序列化}</td>
- *       <td>{@code ctx.getCache().hashHasKey / hashGet / hashSet}</td></tr>
- *   <tr><td>{@code PluginUtils.simpleGet}</td><td>{@code ctx.getHttp().get(...).execute(...)}</td></tr>
- *   <tr><td>{@code PluginUtils.getGroupMemberName(gid, qq)}
- *       ——额外调一次 {@code get_group_member_info}</td>
- *       <td>仍用 {@code ctx.getBot()} 查询（命令事件未携带目标成员的群名片）</td></tr>
- * </table>
- *
- * <h2>顺带修掉的两处缺陷</h2>
- * <ol>
- *   <li><b>「先建空 Map 再写入」的竞态与 NPE</b>：旧 {@code getPigToday} 在缓存键
- *       不存在时先 {@code set(key, new HashMap<>())}，随后再次 {@code get(key)}
- *       并直接 {@code pigTodayMap.put(...)}——若两次调用之间键被清理，
- *       第二次 get 返回 null，put 抛 NPE。改用哈希字段后不再需要这套两步操作。</li>
- *   <li><b>缓存键未做日期隔离</b>：旧实现把「日期」存在每个 value 里，
- *       于是同一哈希会随日期增长且需要逐个比对；现在日期直接参与哈希字段名。</li>
- * </ol>
- *
  * <h2>关于「一天内结果不变」</h2>
  * <p>这是本插件的核心语义：同一个人在同一天内重复查询得到同一只猪。
  * 实现方式是把结果按「日期 + QQ号」作为哈希字段缓存一整天。</p>
@@ -125,7 +98,6 @@ public class PigToday implements YuniPlugin {
             return "猪猪图库暂时取不到，请稍后再试。";
         }
         fresh.setDate(LocalDate.now().toString());
-        // 写入哈希字段：取代旧实现的「先建空 Map 再二次读取后写入」
         ctx.getCache().hashSet(CACHE_KEY, field, fresh);
         return fresh.getImageTitle() + "\n" + IMAGE_BASE_URL + fresh.getImageUrl();
     }
@@ -229,10 +201,7 @@ public class PigToday implements YuniPlugin {
 
     /**
      * 今日猪猪的缓存对象。
-     *
-     * <p>取代旧的 {@code entity.PigTodayCache}。字段与旧类保持一致，
-     * 因此历史缓存仍可反序列化。</p>
-     *
+ *
      * <p>无参构造供 Jackson 反序列化，全参构造供代码内构建。</p>
      */
     @Data

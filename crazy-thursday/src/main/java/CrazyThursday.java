@@ -17,45 +17,9 @@ import java.util.Set;
 /**
  * 疯狂星期四——每周四在随机时间点向群聊发送疯四文案。
  *
- * <h2>历史：旧实现为什么是两个插件</h2>
- * <p>旧实现由两个插件类与两个工具类组成，且它们之间有一条
- * <b>双向耦合</b>——这是设计文档 §1.5 记录的病灶：</p>
- *
- * <pre>
- * 旧 CrazyThursday（定时型）                     旧 StartAtThursday（即时型）
- * ├─ getAction() 生成时间点、循环 sleep 发送      ├─ getAction() 读回时间点、循环 sleep 发送
- * ├─ enable()  -> PluginEnableProcessor          ├─ enable()  -> PluginEnableProcessor
- * │              .enablePlugin(event,             │              .enablePlugin(event,
- * │                  StartAtThursday.class)      │                  CrazyThursday.class)
- * └─ disable() -> .disablePlugin(event,           └─ disable() -> .disablePlugin(event,
- *                 CrazyThursday.class)  ← 写的是自己！              StartAtThursday.class)
- * </pre>
- *
- * <p>两个问题：</p>
- * <ol>
- *   <li><b>双向耦合</b>：两个插件在启停回调里互相操纵对方；
- *       {@code CrazyThursday.disable} 里写的还是 {@code CrazyThursday.class}（自己），
- *       与 {@code enable} 不对称——这是没有明确依赖概念时的必然产物。</li>
- *   <li><b>隐式耦合</b>：两者通过 Redis 键交换数据，但这一契约只存在于两处
- *       {@code RedisYuniCache.REDIS_KEY} 的引用里，没有任何类型或接口表达它。</li>
- * </ol>
- *
- * <h2>现在：一个插件就够了</h2>
- * <p>旧系统把「周四 00:00 建定时任务」与「周四当天启动时按缓存补发」拆成
- * 定时型与即时型两个插件，因为单个插件无法同时表达这两件事，只能靠互相
- * {@code enable}/{@code disable} 衔接。</p>
- *
- * <p>新系统里两者都是 {@code ctx} 的普通能力：{@code ctx.schedule(...)} 注册
- * 定时任务，{@code ctx.runNow(...)} 在加载时立即执行一次。因此补发逻辑就是
- * 本类的一个私有方法 {@link #recover(YuniContext)}——不需要第二个插件，
- * 也不需要子插件或启停回调。两者共享的 {@link ScheduleCache} 仍是真实类型。</p>
- *
  * <h2>关于群粒度启停</h2>
- * <p>旧 {@code CrazyThursdayUtil} 在广播前逐个群查
- * {@code PluginEnableProcessor.isPluginEnabled(groupId, CrazyThursday.class)}——
- * 直接依赖框架内部 API。新实现改用
- * {@link com.yuier.yuni.plugin.api.ScopeQuery}（{@code ctx.getScope()}），
- * 这是稳定的插件侧契约。</p>
+ * <p>广播前通过 {@link com.yuier.yuni.plugin.api.ScopeQuery}
+ * （{@code ctx.getScope()}）只向启用了本插件的群发送。</p>
  *
  * <h2>两条执行路径</h2>
  * <ul>
@@ -232,7 +196,6 @@ public class CrazyThursday implements YuniPlugin {
         }
         String sentence = sentences[ThreadLocalRandom.current().nextInt(sentences.length)];
 
-        // 只向启用了本插件的群发送——取代旧实现对 PluginEnableProcessor 的直接依赖
         ScopeQuery scope = ctx.getScope();
         for (BotGroupInfo group : ctx.getBot().getGroupList().orElse(List.of())) {
             Long groupId = group.getGroupId();
@@ -347,12 +310,7 @@ public class CrazyThursday implements YuniPlugin {
 
     /**
      * 两个插件共享的调度缓存对象。
-     *
-     * <p>旧实现里这份契约只是一句
-     * {@code PluginUtils.deserialize((String) RedisUtil.get(REDIS_KEY).orElse(null), RedisYuniCache.class)}
-     * ——两个插件各自持有一段对同一个键的反序列化代码，契约只存在于约定里。
-     * 迁移后它是一个真实类型，由本类写入、由补发路径读取。</p>
-     */
+ */
     /*
      * 两个构造器分别服务 Jackson（无参）与代码内构建（全参），
      * 读写器由 @Data 生成。

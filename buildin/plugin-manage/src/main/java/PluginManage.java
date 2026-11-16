@@ -27,64 +27,6 @@ import com.yuier.yuni.core.event.matched.CommandResult;
 /**
  * 插件管理——查看 / 开启 / 关闭 / 重载插件。
  *
- * <h2>迁移说明（P5）：四个类合并为一个插件</h2>
- * <p>旧实现把这个插件拆成四个类，靠 {@code PluginManage.execute()} 里的一串
- * {@code if (result.hasChild(...))} 粘起来：</p>
- * <table border="1">
- *   <caption>旧结构 → 新结构</caption>
- *   <tr><th>旧类</th><th>职责</th><th>新位置</th></tr>
- *   <tr><td>{@code PluginManage}</td><td>声明命令树 + 手工分派</td>
- *       <td>本类：命令树 + {@code .on(...)} 就地绑定</td></tr>
- *   <tr><td>{@code PluginShow}</td><td>列表 / 详情渲染</td>
- *       <td>本类的 {@code showList} / {@code showDetail}</td></tr>
- *   <tr><td>{@code PluginEnable}</td><td>启停 + 内置插件权限判定</td>
- *       <td>本类的 {@code setEnabled} + {@link PluginAdmin} 内置保护</td></tr>
- *   <tr><td>{@code PluginReload} + {@code PluginReloadProcessor}</td>
- *       <td>定位 jar + 热重载</td>
- *       <td>本类的 {@code reload} + {@code PluginRuntime.reload}</td></tr>
- *   <tr><td>{@code PluginManageUtil}</td><td>数据组装 / 缓存 / 渲染</td>
- *       <td>{@link PluginManageSupport}</td></tr>
- * </table>
- *
- * <h2>「{@code PluginEnable} 的旧判定逻辑整体消失」——本插件最重要的变化</h2>
- * <p>设计文档 §14.5 对元插件批次的核心主张是：<b>启停逻辑不需要在插件里写</b>。
- * 旧 {@code PluginEnable} 有 104 行，做四件事：</p>
- * <ol>
- *   <li>判序号越界（{@code pluginSeq > container.getPluginCount()}）；</li>
- *   <li>判内置插件 + 权限（{@code isBuiltIn() && permission < MASTER}）；</li>
- *   <li>调插件自身的 {@code enable()} / {@code disable()} 回调；</li>
- *   <li>调 {@code PluginManager.enablePlugin} 改状态。</li>
- * </ol>
- * <p>新系统里：</p>
- * <ul>
- *   <li><b>第 1 件消失</b>——不再用序号定位插件，改用稳定的插件标识。
- *       用户输入的标识不存在时就是「这个插件不存在」，没有「越界」这个概念。
- *       现行系统为了维护序号甚至要在热重载时做 index 偏移修正；</li>
- *   <li><b>第 2 件收敛到 {@link PluginAdmin#setEnabled}</b>——签名的
- *       {@code callerIsMaster} 参数强制调用方在编译期面对「你有没有验过
- *       这个人是不是拥有者」这个问题；</li>
- *   <li><b>第 3 件整体消失</b>——{@code YuniPlugin} 不再有
- *       {@code enable()} / {@code disable()} 回调（设计文档 §2.1 不变量）。
- *       群粒度启停是「某个群是否给这个插件投递事件」，插件根本不需要知道，
- *       更不需要参与；</li>
- *   <li><b>第 4 件就是 {@code setEnabled} 本身。</b></li>
- * </ul>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>「主动类插件暂不完全支持配置开启/关闭」的 TODO 消失</b>：旧
- *       {@code PluginEnable} 对 {@code ActivePluginInstance} 会额外回复一句
- *       「正在加紧适配中」。新系统里主动与被动插件在作用域上<b>没有区别</b>
- *       （都是「这个群是否投递事件」），因此这句话连同它背后的类型分支一起消失。</li>
- *   <li><b>重载前手动找 jar 的三重分支收进框架</b>：旧 {@code PluginReload}
- *       要遍历插件目录、按「文件名等于记录的 jar 名或以模块 ID 开头」筛选，
- *       然后分别处理「没找到」与「找到多个」。现在框架知道每个插件的 jar 文件名，
- *       插件只传插件标识。</li>
- *   <li><b>同一插件的失败重载不再留下半状态</b>：旧实现先建新实例再改容器索引，
- *       中途失败会留下「新实例已建、索引未换」的状态。新框架的 reload 是
- *       「先彻底卸载、再重新加载」，任一步失败都有明确的中间态描述。</li>
- * </ol>
- *
  * <h2>标识 vs 序号：用户输入怎么处理</h2>
  * <p>插件标识形如 {@code steam/MemberSteamStatus}，比「3」长得多。为了不牺牲
  * 易用性，本插件接受两种输入：<b>先按标识精确匹配</b>，匹配不到再当作
@@ -210,9 +152,7 @@ public class PluginManage implements YuniPlugin {
 
     /**
      * 构造「重载」子命令节点。
-     *
-     * <p>权限要求 {@code ADMIN}，与旧实现一致——重载会短暂中断该 jar 的服务。</p>
-     *
+ *
      * @param ctx 插件上下文
      * @return 子节点
      */
@@ -269,7 +209,6 @@ public class PluginManage implements YuniPlugin {
         String image = support.renderToBase64(
                 PluginManageSupport.templateList(), Map.of("pluginList", elements));
         if (image == null) {
-            // 旧实现会把 null 拼成 "base64://null" 发出去，用户只看到一个裂图
             reply.quote().text("插件列表图片生成失败，请查看日志了解详情。").send();
             return;
         }
@@ -497,12 +436,7 @@ public class PluginManage implements YuniPlugin {
 
     /**
      * 判定调用者是否为 bot 拥有者。
-     *
-     * <p>旧 {@code PluginEnable} 是
-     * {@code permissionManager.getUserPermission(eventContext, pluginFullId)} 再比
-     * {@code MASTER}。新系统的命令节点已声明 {@code UserPermission.ADMIN}，
-     * 框架会先校验这一层；这里额外判 MASTER 是为了内置插件的保护。</p>
-     *
+ *
      * @param ctx     插件上下文
      * @param userId  调用者 QQ 号
      * @param groupId 群号

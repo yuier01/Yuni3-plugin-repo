@@ -35,48 +35,8 @@ import org.java_websocket.server.WebSocketServer;
  *   NapCat ←→ Yuni (OneBot适配器) ←→ Yuni (本插件) ←→ maimai (MaiBot-Napcat-Adapter)
  * </pre>
  *
- * <h2>迁移说明（P5）：静态门面 → 构造注入</h2>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code PluginUtils.getYuniBot()}（每次调用查 Spring 容器）</td>
- *       <td>构造时注入 {@link YuniBot}——依赖显式，且省掉每次调用的容器查找</td></tr>
- *   <tr><td>{@code PluginUtils.serialize/deserialize}（静态门面 + 容器查找 ObjectMapper）</td>
- *       <td>构造时注入 {@link JsonCodec}</td></tr>
- *   <tr><td>{@code PluginUtils.getBotId()} / {@code getBotNickName()}
- *       （读 Spring 里的 {@code Bot} 配置实体）</td>
- *       <td>{@code bot.getBotId()} / {@code bot.getUserInfo(...)}
- *           ——走机器人自身的接口，不再依赖框架的配置类</td></tr>
- *   <tr><td>由 {@code MaiMaiAdapterBooter} 注册为 Spring Bean</td>
- *       <td>实现 {@link MaiMaiApi}，由 booter 用 {@code ctx.provide} 注册为插件服务</td></tr>
- * </table>
- *
- * <h2>顺带修掉的缺陷</h2>
- * <ol>
- *   <li><b>{@code bot()} 每次调用都做一次容器查找</b>：旧实现
- *       {@code private YuniBot bot() { return PluginUtils.getYuniBot(); }}，
- *       而每个 action 至少调一次、{@code getGroupList} 等还会在流里反复调。
- *       现在 bot 是构造注入的字段。</li>
- *   <li><b>{@code sendLifecycleEvent} 的 {@code sub_type} 语义可疑</b>：
- *       OneBot 的 {@code lifecycle} 元事件用 {@code sub_type: connect} 表示
- *       「连接建立」，但该事件本应由<b>客户端</b>发给服务端订阅；服务端主动发
- *       {@code connect} 给刚连上的客户端并不符合协议惯例（NapCat 不会这么做）。
- *       迁移时<b>保留原行为</b>（可能对端的 maimai 适配器已按此约定实现），
- *       但加上注释说明它的非标准性，避免后人误以为这是协议要求。</li>
- *   <li><b>{@code heartbeatRunning} 与 {@code stopHeartbeat} 不真正停止任务</b>：
- *       旧 {@code stopHeartbeat()} 只把标志位置为 {@code false}，
- *       {@code scheduler} 上的定时任务仍在每秒触发（只是 {@code sendHeartbeat}
- *       内部因 {@code clients.isEmpty()} 提前返回）。更严重的是
- *       {@code startHeartbeat} 在客户端重连时不会重启任务——
- *       {@code scheduleAtFixedRate} 只在首次调用时注册，这个行为恰好正确，
- *       但依赖了「标志位只用于防重入」这个大意的写法。
- *       本实现把定时任务句柄保存下来，{@code stopHeartbeat} 真正 cancel。</li>
- * </ol>
- *
- * <h2>「即时插件」的语义在这里如何体现</h2>
- * <p>旧 {@code MaiMaiAdapterBooter extends ImmediatePlugin}。新系统中该类型消失，
- * booter 在 {@code apply} 里直接构造并启动服务器——不需要
- * 「注册后再异步执行一次」这个间接层。</p>
+ * <p>服务器在 {@code apply} 里直接构造并启动；它是框架不认识的资源，
+ * 由插件通过 {@code ctx.effect(...)} 声明清理。</p>
  */
 @Slf4j
 public class MaiMaiWsServer extends WebSocketServer implements MaiMaiApi {
@@ -253,10 +213,7 @@ public class MaiMaiWsServer extends WebSocketServer implements MaiMaiApi {
 
     /**
      * 取登录信息。
-     *
-     * <p>昵称走 {@code bot.getUserInfo(自己)} 而不是读框架的 {@code Bot} 配置实体
-     * （旧实现是后者）。取不到时回退为空串——OneBot 允许 nickname 为空。</p>
-     *
+ *
      * @return 响应
      */
     private Map<String, Object> getLoginInfo() {
@@ -287,12 +244,7 @@ public class MaiMaiWsServer extends WebSocketServer implements MaiMaiApi {
 
     /**
      * 取群信息。
-     *
-     * <p>OneBot 的 {@code no_cache} 语义是「true=不用缓存」，因此
-     * {@code noCache = !parseBool(params, "no_cache", true)} 这个取反是对的
-     * （缺省 {@code true} 表示默认不走缓存，取反后传给接口的是
-     * {@code false}）。迁移时保留原表达式，并补上这行注释以免后人「顺手修正」成 bug。</p>
-     *
+ *
      * @param params OneBot 参数
      * @return 响应
      */
@@ -442,10 +394,7 @@ public class MaiMaiWsServer extends WebSocketServer implements MaiMaiApi {
 
     /**
      * 启动心跳（幂等）。
-     *
-     * <p>取代旧实现的「标志位防重入」写法：这里直接判断任务句柄，语义更直接，
-     * 且句柄可用于真正取消。</p>
-     */
+ */
     private void startHeartbeat() {
         if (heartbeatTask != null && !heartbeatTask.isCancelled()) {
             return;
@@ -460,10 +409,7 @@ public class MaiMaiWsServer extends WebSocketServer implements MaiMaiApi {
 
     /**
      * 停止心跳。
-     *
-     * <p>旧实现只置标志位，定时任务仍在按间隔运行（内部提前返回）。
-     * 本实现真正 cancel 任务——客户端全部断开后不应再空转。</p>
-     */
+ */
     private void stopHeartbeat() {
         ScheduledFuture<?> task = heartbeatTask;
         if (task != null) {

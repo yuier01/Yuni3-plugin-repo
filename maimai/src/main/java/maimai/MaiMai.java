@@ -13,19 +13,11 @@ import lombok.extern.slf4j.Slf4j;
  *   NapCat ←→ Yuni OneBot适配器 ←→ 本插件 (WS Server) ←→ maimai
  * </pre>
  *
- * <h2>为什么是一个插件类</h2>
- * <p>旧实现拆成 {@code MaiMaiAdapterBooter}（启动服务器、提供服务）与
- * {@code OneBotMessageForward}（消费服务、转发消息）两个插件。拆分的原因是旧系统
- * 一个插件只能承担一种「类型」；新系统里一个 {@code apply} 可以同时启动资源、
- * 注册服务与处理器，因此合并为一个入口。这样也消除了「转发器先于连接器加载时
- * 停在 PENDING」这一整类顺序问题——两者现在天然同生共死。</p>
- *
  * <h2>设计要点</h2>
  * <ul>
  *   <li>WS 服务器是框架不认识的资源，用 {@code ctx.effect(...)} 声明清理；</li>
  *   <li>{@link MaiMaiApi} 仍注册为插件服务，供其它插件按类型消费；</li>
- *   <li>{@code server.start()} 失败会抛异常，插件进入 {@code FAILED}，管理端可见——
- *       取代旧实现「异步启动、异常只进日志、插件仍显示 ACTIVE」。</li>
+ *   <li>{@code server.start()} 失败会抛异常，插件进入 {@code FAILED}，管理端可见。</li>
  * </ul>
  */
 @Slf4j

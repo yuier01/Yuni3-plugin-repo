@@ -12,21 +12,8 @@ import java.util.List;
 /**
  * 切噜语编码/解码——把明文按 4bit 映射表转成「切噜语」，以及反向还原。
  *
- * <h2>迁移说明（P5）</h2>
- * <table border="1">
- *   <caption>旧 → 新</caption>
- *   <tr><th>旧实现</th><th>新实现</th></tr>
- *   <tr><td>{@code execute()} 里两个 {@code if (hasChild(...))} 分派</td>
- *       <td>每个子命令的处理器经 {@code Commands.on(child, handler)}
- *           就地绑在它自己的节点上——分派链消失</td></tr>
- *   <tr><td>两个方法各自 {@code loadJsonConfigFromPlugin("trans-map.json", ...)}</td>
- *       <td>映射表在 {@code apply} 时读一次并缓存到局部变量</td></tr>
- *   <tr><td>{@code getChatSession().response(...)}</td><td>{@code reply.text(...).send()}</td></tr>
- * </table>
- *
  * <h2>关于「映射表读一次」</h2>
- * <p>旧实现<b>每次执行命令都重新读一遍 json 文件并反序列化</b>（两个方法各一次）。
- * 映射表是纯静态资源，插件生命周期内不会变化，因此在 {@code apply} 里读一次、
+ * <p>映射表是纯静态资源，插件生命周期内不会变化，因此在 {@code apply} 里读一次、
  * 用闭包捕获即可。这既减少 IO，也让「映射表读失败」在插件加载阶段就暴露——
  * 而不是等到用户发命令时才失败。</p>
  */
@@ -62,7 +49,6 @@ public class ChieruTrans implements YuniPlugin {
                             + (chieruMap == null ? 0 : chieruMap.size()));
         }
 
-        // 每个子命令的处理器紧贴它自己的参数声明——取代旧的 if/else if 分派链
         CommandNode encode = Commands.on(
                 CommandNode.builder(SUB_ENCODE)
                         .description("切噜语编码")
