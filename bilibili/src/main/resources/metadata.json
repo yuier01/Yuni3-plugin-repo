@@ -1,0 +1,16 @@
+{
+  "plugins": {
+    "BilibiliVideoParser": {
+      "description": "识别 BV 号或 b23.tv 短链接并展示视频基本信息",
+      "tips": [
+        "检测到聊天消息中包含 BV 号或 b23.tv 短链接，自动解析视频相关信息",
+        "支持普通文本消息与 QQ 分享卡片"
+      ],
+      "name": "B 站视频解析",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "B站工具箱",
+  "id": "bilibili"
+}

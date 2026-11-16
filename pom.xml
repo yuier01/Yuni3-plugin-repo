@@ -29,6 +29,7 @@
         <module>maimai</module>
         <module>steam</module>
         <module>mcmanage</module>
+        <module>bilibili</module>
     </modules>
 
 </project>
