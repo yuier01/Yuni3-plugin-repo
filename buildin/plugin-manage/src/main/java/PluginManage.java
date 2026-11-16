@@ -162,12 +162,11 @@ public class PluginManage implements YuniPlugin {
                 .arg(ArgDef.optional(ARG_PLUGIN, "插件标识（留空则查看列表）"))
                 .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var child = result.getChild(CHILD_VIEW);
-            if (!child.hasArg(ARG_PLUGIN)) {
+            if (!result.hasArg(ARG_PLUGIN)) {
                 showList(ctx, support, reply, event.getPosition(), groupId);
                 return;
             }
-            String raw = child.getArg(ARG_PLUGIN).asText().trim();
+            String raw = result.getArg(ARG_PLUGIN).asText().trim();
             Optional<PluginView> found = resolve(ctx, raw);
             if (found.isEmpty()) {
                 reply.quote().text("没有找到插件「" + raw + "」。\n"
@@ -224,12 +223,11 @@ public class PluginManage implements YuniPlugin {
                 .permission(UserPermission.ADMIN)
                 .arg(ArgDef.optional(ARG_RELOAD_TARGET, "插件标识（留空则重载全部）"))
                 .build(), (event, result, reply) -> {
-            var child = result.getChild(CHILD_RELOAD);
-            if (!child.hasArg(ARG_RELOAD_TARGET)) {
+            if (!result.hasArg(ARG_RELOAD_TARGET)) {
                 reloadAll(ctx, reply);
                 return;
             }
-            String raw = child.getArg(ARG_RELOAD_TARGET).asText().trim();
+            String raw = result.getArg(ARG_RELOAD_TARGET).asText().trim();
             Optional<PluginView> found = resolve(ctx, raw);
             if (found.isEmpty()) {
                 reply.quote().text("没有找到插件「" + raw + "」。").send();
@@ -329,8 +327,7 @@ public class PluginManage implements YuniPlugin {
     private void setEnabled(YuniContext ctx, PluginManageSupport support,
                             Reply reply, YuniMessageEvent event,
                             CommandResult result, boolean enabled) {
-        String raw = result.getChild(
-                enabled ? CHILD_ENABLE : CHILD_DISABLE).getArg(ARG_PLUGIN).asText().trim();
+        String raw = result.getArg(ARG_PLUGIN).asText().trim();
 
         Optional<PluginView> found = resolve(ctx, raw);
         if (found.isEmpty()) {

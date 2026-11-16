@@ -127,9 +127,8 @@ public class MCManage implements YuniPlugin {
                 .arg(ArgDef.required(服务器地址, "服务器地址"))
                 .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var args = result.getChild(添加);
-            String serverName = args.getArg(服务器名称).asText();
-            String serverAddr = args.getArg(服务器地址).asText();
+            String serverName = result.getArg(服务器名称).asText();
+            String serverAddr = result.getArg(服务器地址).asText();
 
             if (findByName(ctx, groupId, serverName) != null) {
                 reply.quote().text("当前群组已添加同名服务器，请重新选择服务器名称。").send();
@@ -164,7 +163,7 @@ public class MCManage implements YuniPlugin {
                 .arg(ArgDef.required(服务器名称, "MC 服务器名称"))
                 .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            String serverName = result.getChild(删除).getArg(服务器名称).asText();
+            String serverName = result.getArg(服务器名称).asText();
 
             if (findByName(ctx, groupId, serverName) == null) {
                 reply.quote().text(notFound(serverName)).send();
@@ -191,9 +190,8 @@ public class MCManage implements YuniPlugin {
                 .arg(ArgDef.required(服务器新名称, "MC 服务器新名称"))
                 .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var args = result.getChild(修改名称);
-            String serverName = args.getArg(服务器名称).asText();
-            String newServerName = args.getArg(服务器新名称).asText();
+            String serverName = result.getArg(服务器名称).asText();
+            String newServerName = result.getArg(服务器新名称).asText();
 
             GroupMcServer record = findByName(ctx, groupId, serverName);
             if (record == null) {
@@ -225,9 +223,8 @@ public class MCManage implements YuniPlugin {
                 .arg(ArgDef.required(服务器地址, "MC 服务器地址"))
                 .build(), (event, result, reply) -> {
             long groupId = event.getGroupId();
-            var args = result.getChild(修改地址);
-            String serverName = args.getArg(服务器名称).asText();
-            String newServerAddr = args.getArg(服务器地址).asText();
+            String serverName = result.getArg(服务器名称).asText();
+            String newServerAddr = result.getArg(服务器地址).asText();
 
             GroupMcServer record = findByName(ctx, groupId, serverName);
             if (record == null) {
