@@ -19,6 +19,9 @@ import java.util.regex.Pattern;
 
 /**
  * 从聊天消息中提取 B 站视频入口。
+ * 算法参考:
+ * <a href="https://github.com/Ling-LA/ling-video-bot/blob/master/plugin.py">ling-video-bot</a>
+ * <a href="https://github.com/BestBcz/BiliURL/blob/master/src/main/kotlin/com/bcz/bilivideoparser/BiliVideoParser.kt">BiliVideoParser</a>
  *
  * <h2>支持的消息形态</h2>
  * <ul>
