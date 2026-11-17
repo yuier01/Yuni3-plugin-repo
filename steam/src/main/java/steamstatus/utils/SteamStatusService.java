@@ -1,6 +1,7 @@
 package steamstatus.utils;
 
 import com.yuier.yuni.core.bot.BotGroupInfo;
+import com.yuier.yuni.core.bot.BotGroupMemberInfo;
 import com.yuier.yuni.plugin.api.ScopeQuery;
 import com.yuier.yuni.plugin.api.YuniContext;
 import com.yuier.yuni.plugin.api.service.YuniCache;
@@ -15,6 +16,8 @@ import steamstatus.model.SinglePlayerSummary;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -316,14 +319,77 @@ public class SteamStatusService {
                 continue;
             }
             // 只对「用户确实在这个群里」的群播报，否则会把陌生人的游戏动态发到无关群
-            boolean isMember = ctx.getBot()
-                    .getGroupMemberInfo(String.valueOf(groupId), String.valueOf(userId))
-                    .isPresent();
-            if (isMember) {
+            if (isGroupMember(groupId, userId)) {
                 result.add(groupId);
             }
         }
         return result;
+    }
+
+    /**
+     * 判断用户是否真的在指定群中。
+     *
+     * <p>不能只看 {@code getGroupMemberInfo(...)} 是否返回 Optional：部分
+     * OneBot 实现（如 NapCat）对非群成员也返回 {@code retcode=0}，data 中只有
+     * 请求参数回填的 {@code group_id}/{@code user_id}，昵称和入群时间都是空的。
+     * 这种占位对象会被误判为真实成员，导致消息广播到所有群。</p>
+     *
+     * @param groupId 群号
+     * @param userId  用户 QQ 号
+     * @return 用户确实在群中时返回 {@code true}
+     */
+    private boolean isGroupMember(long groupId, long userId) {
+        Optional<BotGroupMemberInfo> info;
+        try {
+            info = ctx.getBot().getGroupMemberInfo(
+                    String.valueOf(groupId), String.valueOf(userId));
+        } catch (RuntimeException e) {
+            log.warn("[Steam] 查询群成员信息失败，跳过群 {}: {}", groupId, e.getMessage());
+            return false;
+        }
+
+        if (info.isEmpty()) {
+            return false;
+        }
+        if (isRealMember(info.get(), userId)) {
+            return true;
+        }
+        // 占位对象无法作为成员依据，回退到群成员列表确认
+        return isMemberInList(groupId, userId);
+    }
+
+    /**
+     * 判断成员对象是否包含真实成员数据。
+     *
+     * @param member 成员对象
+     * @param userId 目标 QQ 号
+     * @return 是真实成员时返回 {@code true}
+     */
+    private static boolean isRealMember(BotGroupMemberInfo member, long userId) {
+        return member != null
+                && Objects.equals(member.getUserId(), userId)
+                && member.getNickname() != null
+                && !member.getNickname().isBlank();
+    }
+
+    /**
+     * 通过群成员列表确认成员身份。
+     *
+     * @param groupId 群号
+     * @param userId  用户 QQ 号
+     * @return 在成员列表中时返回 {@code true}
+     */
+    private boolean isMemberInList(long groupId, long userId) {
+        try {
+            return ctx.getBot().getGroupMemberList(String.valueOf(groupId))
+                    .map(members -> members.stream()
+                            .anyMatch(member -> member != null
+                                    && Objects.equals(member.getUserId(), userId)))
+                    .orElse(false);
+        } catch (RuntimeException e) {
+            log.warn("[Steam] 查询群成员列表失败，跳过群 {}: {}", groupId, e.getMessage());
+            return false;
+        }
     }
 
     /**
