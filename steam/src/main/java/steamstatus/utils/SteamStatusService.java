@@ -14,11 +14,14 @@ import steamstatus.model.AppDetailsApiResponse;
 import steamstatus.model.PlayerSummariesResponse;
 import steamstatus.model.SinglePlayerSummary;
 
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Steam 状态服务的<b>实例化</b>工具。
@@ -48,8 +51,14 @@ public class SteamStatusService {
     /** 查询游戏中文名接口地址。 */
     private static final String API_APP_DETAILS = "https://store.steampowered.com/api/appdetails";
 
+    /** 查询游戏中文名的超时时间。Steam 商店接口偶尔较慢，默认 5 秒容易超时。 */
+    private static final Duration APP_DETAILS_TIMEOUT = Duration.ofSeconds(15);
+
     /** 单次批量查询的 steamid 数量上限。 */
     public static final int BATCH_SIZE = 100;
+
+    /** appid → 游戏中文名；避免同一游戏在每次轮询时重复请求 Steam。 */
+    private final Map<String, String> gameNameCache = new ConcurrentHashMap<>();
 
     /** 插件上下文。 */
     private final YuniContext ctx;
@@ -182,7 +191,7 @@ public class SteamStatusService {
      * @return 状态快照；无记录时返回 {@code null}
      */
     public SinglePlayerSummary getCachedStatus(String steamId) {
-        if (steamId == null) {
+        if (steamId == null || Thread.currentThread().isInterrupted()) {
             return null;
         }
         return ctx.getCache().hashGet(KEY_STEAM_ID_TO_STATUS, steamId, SinglePlayerSummary.class)
@@ -195,7 +204,8 @@ public class SteamStatusService {
      * @param player 玩家状态
      */
     public void putCachedStatus(SinglePlayerSummary player) {
-        if (player == null || player.getSteamid() == null) {
+        if (player == null || player.getSteamid() == null
+                || Thread.currentThread().isInterrupted()) {
             return;
         }
         ctx.getCache().hashSet(KEY_STEAM_ID_TO_STATUS, player.getSteamid(), player);
@@ -267,18 +277,41 @@ public class SteamStatusService {
         if (player == null || player.getGameChineseName() != null || player.getGameid() == null) {
             return;
         }
+        if (Thread.currentThread().isInterrupted()) {
+            // 插件正在重载/卸载：不再发起网络请求，直接回退英文名
+            player.setGameChineseName(player.getGameextrainfo());
+            return;
+        }
+
+        String gameId = player.getGameid();
+        String cachedName = gameNameCache.get(gameId);
+        if (cachedName != null) {
+            player.setGameChineseName(cachedName);
+            return;
+        }
+
         try {
             AppDetailsApiResponse response = ctx.getHttp()
                     .get(API_APP_DETAILS)
-                    .query("appids", player.getGameid())
+                    .query("appids", gameId)
                     .query("l", "schinese")
                     .query("filters", "basic")
+                    .timeout(APP_DETAILS_TIMEOUT)
                     .execute(AppDetailsApiResponse.class);
-            String name = response == null ? null : response.appName(player.getGameid());
-            player.setGameChineseName(name != null ? name : player.getGameextrainfo());
+            String name = response == null ? null : response.appName(gameId);
+            if (name != null && !name.isBlank()) {
+                gameNameCache.put(gameId, name);
+                player.setGameChineseName(name);
+            } else {
+                player.setGameChineseName(player.getGameextrainfo());
+            }
         } catch (YuniHttp.HttpException e) {
-            log.warn("[Steam] 查询游戏中文名失败，回退英文名: {}", e.getMessage());
+            // 即使请求失败也要先给出可展示的英文名，避免播报出现 null
             player.setGameChineseName(player.getGameextrainfo());
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+            log.warn("[Steam] 查询游戏中文名失败，回退英文名: {}", e.getMessage());
         }
     }
 

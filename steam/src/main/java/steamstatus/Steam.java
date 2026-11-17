@@ -60,12 +60,18 @@ public class Steam implements YuniPlugin {
      * @param steam Steam 状态服务
      */
     private void poll(SteamStatusService steam) {
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
         long total = steam.countBindings();
         if (total == 0) {
             return;
         }
         int pageCount = (int) ((total + SteamStatusService.BATCH_SIZE - 1) / SteamStatusService.BATCH_SIZE);
         for (int page = 0; page < pageCount; page++) {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
             List<UserSteamId> bindings = steam.findBindingsByPage(page, SteamStatusService.BATCH_SIZE);
             if (bindings.isEmpty()) {
                 continue;
@@ -79,8 +85,14 @@ public class Steam implements YuniPlugin {
             }
             // 查询失败时返回空列表，本轮跳过——不会中断后续页
             for (SinglePlayerSummary current : steam.queryPlayers(steamIds)) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 SinglePlayerSummary previous = steam.getCachedStatus(current.getSteamid());
                 reportChange(steam, previous, current);
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 // 刷新缓存，作为下一轮的差分基准
                 steam.putCachedStatus(current);
             }
@@ -95,8 +107,14 @@ public class Steam implements YuniPlugin {
      * @param current  本轮的状态
      */
     private void reportChange(SteamStatusService steam, SinglePlayerSummary previous, SinglePlayerSummary current) {
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
         steam.fillGameChineseName(previous);
         steam.fillGameChineseName(current);
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
 
         if (previous == null) {
             // 首次见到：只在「正在游戏」时播报，避免刚绑定就刷一条「不在游戏」
