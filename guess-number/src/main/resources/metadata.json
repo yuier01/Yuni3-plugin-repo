@@ -1,0 +1,17 @@
+{
+  "plugins": {
+    "GuessNumber": {
+      "description": "长会话示例：多轮猜数字",
+      "tips": [
+        "在群聊发送 /猜数字 创建游戏",
+        "其他人发送 /加入 猜数字 参与，发送 /退出 猜数字 离开",
+        "参与者直接发送 1~100 的整数猜数；猜中后游戏结束"
+      ],
+      "name": "猜数字（长会话示例）",
+      "author": "Yuier me@yuier.com",
+      "version": "0.0.1"
+    }
+  },
+  "name": "长会话示例",
+  "id": "guess-number"
+}

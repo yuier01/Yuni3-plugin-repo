@@ -15,6 +15,7 @@
     <!-- 插件模块 -->
     <modules>
         <module>example</module>
+        <module>guess-number</module>
         <module>buildin/plugin-manage</module>
         <module>buildin/eventmanage</module>
         <module>daily-news</module>
