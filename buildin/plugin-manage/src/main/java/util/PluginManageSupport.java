@@ -285,6 +285,36 @@ public class PluginManageSupport {
     }
 
     /**
+     * 浏览器启动参数。
+     *
+     * <p>生产镜像使用 Alpine 的系统 Chromium，并设置
+     * {@code YUNI_CHROMIUM_EXECUTABLE_PATH}；容器内通常以 root 运行，
+     * 因此显式关闭 Chromium sandbox。未配置时回退到 Playwright 自带的浏览器。</p>
+     *
+     * @return 启动参数
+     */
+    private static BrowserType.LaunchOptions browserLaunchOptions() {
+        BrowserType.LaunchOptions options = new BrowserType.LaunchOptions().setHeadless(true);
+        String[] candidates = {
+                System.getenv("YUNI_CHROMIUM_EXECUTABLE_PATH"),
+                "/usr/bin/chromium-browser",
+                "/usr/bin/chromium"
+        };
+        for (String candidate : candidates) {
+            if (candidate == null || candidate.isBlank()) {
+                continue;
+            }
+            Path executable = Paths.get(candidate);
+            if (Files.isExecutable(executable)) {
+                options.setExecutablePath(executable);
+                options.setArgs(List.of("--no-sandbox"));
+                return options;
+            }
+        }
+        return options;
+    }
+
+    /**
      * 用无头浏览器把 HTML 截屏为 Base64。
  *
      * @param html HTML 字符串
@@ -292,8 +322,7 @@ public class PluginManageSupport {
      */
     public static String screenshotToBase64(String html) {
         try (Playwright playwright = Playwright.create()) {
-            try (Browser browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions().setHeadless(true))) {
+            try (Browser browser = playwright.chromium().launch(browserLaunchOptions())) {
                 Page page = browser.newPage();
                 page.setContent(html);
                 return captureElementAsBase64(page);
@@ -334,8 +363,7 @@ public class PluginManageSupport {
      */
     public static void screenshotToFile(String html, String outputFilePath) {
         try (Playwright playwright = Playwright.create()) {
-            try (Browser browser = playwright.chromium().launch(
-                    new BrowserType.LaunchOptions().setHeadless(true))) {
+            try (Browser browser = playwright.chromium().launch(browserLaunchOptions())) {
                 Page page = browser.newPage();
                 page.setContent(html);
                 Path output = Paths.get(outputFilePath).toAbsolutePath();
