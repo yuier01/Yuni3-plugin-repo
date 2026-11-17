@@ -1,8 +1,8 @@
 package steamstatus.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -15,23 +15,42 @@ import java.util.Map;
  *   "730": { "success": false }
  * }
  * }</pre>
- * <p>顶层以 <b>appid 为键</b>，因此这里用 {@code Map<String, AppDetailResponse>} 承载。</p>
+ * <p>顶层以 <b>appid 为键</b>，没有固定的 {@code apps} 包装字段，因此这里用
+ * {@link JsonAnySetter} 把动态键收集到 {@link #apps} 中。</p>
  */
-@Data
-@NoArgsConstructor
 public class AppDetailsApiResponse {
 
     /** appid → 该游戏的详情条目。 */
-    private Map<String, AppDetailResponse> apps;
+    private final Map<String, AppDetailResponse> apps = new HashMap<>();
+
+    /**
+     * 收集顶层动态 appid 字段。
+     *
+     * @param appId 游戏 appid
+     * @param entry 游戏详情条目
+     */
+    @JsonAnySetter
+    public void addApp(String appId, AppDetailResponse entry) {
+        apps.put(appId, entry);
+    }
+
+    /**
+     * 取 appid 到详情条目的映射。
+     *
+     * @return appid → 详情条目；永不为 {@code null}
+     */
+    public Map<String, AppDetailResponse> getApps() {
+        return apps;
+    }
 
     /**
      * 取指定 appid 的游戏中文名。
- *
+     *
      * @param appId 游戏 appid
      * @return 游戏名；取不到时返回 {@code null}
      */
     public String appName(String appId) {
-        if (appId == null || apps == null) {
+        if (appId == null) {
             return null;
         }
         AppDetailResponse entry = apps.get(appId);
